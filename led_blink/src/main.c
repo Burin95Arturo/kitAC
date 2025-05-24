@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/gpio.h" // Incluye el header de GPIO de ESP-IDF
+#include "driver/gpio.h"        // Incluye el header de GPIO de ESP-IDF
 #include "inc/hcsr04.h"
+#include "inc/hall.h"
+#include "inc/pinout.h"
+
 
 
 void task_blink(void *pvParameters) {
@@ -40,9 +43,15 @@ void user_init(void) {
     io_conf.pull_up_en = GPIO_PULLDOWN_DISABLE;
     gpio_config(&io_conf);
 
+    io_conf.pin_bit_mask = (1ULL << HALL_PIN);
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pull_up_en = GPIO_PULLDOWN_ENABLE; // Sino solo se apaga con masa y se la pasa prendido
+    gpio_config(&io_conf);
+
     // Inicializacion de tareas
     //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
 }
 
 void app_main(void)

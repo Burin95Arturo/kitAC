@@ -8,6 +8,8 @@
 #include "driver/gpio.h"
 #include "esp_rom_caps.h"
 #include "esp_timer.h" // Incluye esp_timer para medir el tiempo
+#include "inc/pinout.h"
+
 
 long getDistance() {
     gpio_set_level(TRIG_PIN, 0);
