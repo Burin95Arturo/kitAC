@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "hcsr04.h": "c"
+        "hcsr04.h": "c",
+        "pinout.h": "c",
+        "hall.h": "c",
+        "balanza.h": "c"
     }
 }
