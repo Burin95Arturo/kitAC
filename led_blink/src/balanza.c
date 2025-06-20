@@ -23,11 +23,11 @@ static const char *TAG = "HX711_DRIVER";
 // --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
 // Obtén este valor promediando varias lecturas sin carga.
-#define ZERO_OFFSET_VALUE 88350L // Raw value obtenido con balanza sin carga (sin promediar)
+#define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga (promediado 10)
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
-#define SCALE_FACTOR_VALUE 27455.4455f // Se uso una pesa de 10Kg y un trapito para no dañar la superficie estimado en 100gr
+#define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 // --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
 volatile float hx711_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
@@ -124,23 +124,38 @@ void balanza_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
     long current_raw_value = 1;
+    long promedio = 0;
+    long contador_promedio = 0;
     ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
     while (1) {
          
         current_raw_value = hx711_read_raw();
+        promedio = current_raw_value + promedio;
         hx711_raw_reading = current_raw_value; // Actualizar variable global (volatile)
-
+        contador_promedio++;
         // Calcular el peso en kilogramos usando los valores de calibración
-        // Asegúrate de que SCALE_FACTOR_VALUE sea un float para la división.
-        if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-            hx711_weight_kg = ((float)current_raw_value - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-        } else {
-            hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-            ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-        }
+        // Asegúrate de que SCALE_FACTOR_VALUE seagit  un float para la división.
+        // if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
+        //     hx711_weight_kg = ((float)current_raw_value - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+        // } else {
+        //     hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
+        //     ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+        // }
 
-        ESP_LOGI(TAG, "Lectura cruda HX711: %ld | Peso: %.3f Kg", hx711_raw_reading, hx711_weight_kg);
+        if(contador_promedio == 10){
+            contador_promedio = 0;
 
-        vTaskDelay(pdMS_TO_TICKS(500)); // Leer cada 500 ms
+            if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
+                hx711_weight_kg = ((float)(promedio/10) - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+            } else {
+                hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
+                ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+            }
+
+            ESP_LOGI(TAG, "Lectura cruda HX711: %ld | Peso: %.3f Kg", promedio/10, hx711_weight_kg);
+            promedio = 0;
+        }  
+
+        vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
     }
 }

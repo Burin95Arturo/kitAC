@@ -3,6 +3,12 @@
         "hcsr04.h": "c",
         "pinout.h": "c",
         "hall.h": "c",
-        "balanza.h": "c"
+        "balanza.h": "c",
+        "buttons.h": "c",
+        "esp_log.h": "c",
+        "gpio.h": "c",
+        "stdio.h": "c",
+        "freertos.h": "c",
+        "display_lcd.h": "c"
     }
 }

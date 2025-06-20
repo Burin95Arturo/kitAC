@@ -7,12 +7,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"        // Incluye el header de GPIO de ESP-IDF
+#include "inc/pinout.h"
+#include "esp_log.h"
+
 #include "inc/hcsr04.h"
 #include "inc/hall.h"
 #include "inc/ir.h"
 #include "inc/balanza.h"
-#include "inc/pinout.h"
-#include "esp_log.h"
+#include "inc/buttons.h"
+#include "inc/display_lcd.h"
 
 static const char *TAG = "MSJ";
 
@@ -49,7 +52,6 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG, "GPIO %d (HX711_PD_SCK) configurado como salida.", HX711_PD_SCK_PIN);
 
-
     // --- Configuración de Pines de ENTRADA ---
     // (ECHO, HALL, IR, HX711_DOUT)
     io_conf.mode = GPIO_MODE_INPUT;
@@ -84,6 +86,23 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG, "GPIO %d (HX711_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_DOUT_PIN);
     
+    io_conf.pin_bit_mask = (1ULL << BUTTON_UP_PIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG, "GPIO %d (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_UP_PIN);
+
+    io_conf.pin_bit_mask = (1ULL << BUTTON_DOWN_PIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG, "GPIO %d (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_DOWN_PIN);
+
+    io_conf.pin_bit_mask = (1ULL << BUTTON_SELECT_PIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_SELECT_PIN);
 
     // Inicializacion de tareas
     //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
@@ -91,6 +110,8 @@ void user_init(void) {
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
     xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
 }
 
 void app_main(void)
