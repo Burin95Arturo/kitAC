@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "esp_rom_sys.h" // Para esp_rom_delay_us
 #include "inc/pinout.h"
+#include "inc/program.h"
 
 #include "esp_rom_caps.h"
 #include "esp_timer.h" // Incluye esp_timer para medir el tiempo

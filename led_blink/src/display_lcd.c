@@ -8,6 +8,8 @@
 #define LCD_COLS 8 // Número de columnas (caracteres por línea)
 #define LCD_ROWS 2 // Número de filas (líneas)
 
+#define NUM_MENU_OPTIONS (sizeof(menu_options) / sizeof(menu_options[0]))
+
 // --- TAG para los logs ---
 static const char *TAG = "LCD_DISPLAY";
 
@@ -24,15 +26,49 @@ static void lcd_send_command(uint8_t command);
 static void lcd_send_data(uint8_t data);
 static void lcd_pulse_enable(void);
 
-// // --- Prototipos de funciones públicas del driver LCD ---
-// void lcd_init(void);
-// void lcd_clear(void);
-// void lcd_set_cursor(uint8_t col, uint8_t row);
-// void lcd_write_string(const char *str);
+// Menú de opciones
+const char *menu_options[] = {
+    "Balanza",
+    "Inclinacion",
+    "Altura",
+    "Barandas",
+    "Freno",
+    "..."
+};
 
-// --- Tarea de FreeRTOS para el Display ---
-// void lcd_display_task(void *pvParameters);
+static const char *TAG_MENU = "MENU_TASK";
 
+// Variable de estado del menú (global, pero accedida solo por la tarea del menú)
+static int current_selection = 0;
+static int prev_selection_index = 0;
+
+/**
+ * @brief Funcion para refrescar lo que se muestra en el LCD.
+ * Basado en la variable global `current_selection`.
+ * Muestra la opcion actual y la siguiente.
+ */
+static void refresh_lcd_display(void) {
+    lcd_clear();
+
+    if (NUM_MENU_OPTIONS > 0) {
+        // Calcular el índice del elemento anterior (arriba) de forma circular
+        prev_selection_index = (current_selection - 1 + NUM_MENU_OPTIONS) % NUM_MENU_OPTIONS;
+
+        // Linea 1: Mostrar la opcion anterior
+        lcd_set_cursor(0, 0);
+        lcd_write_string(menu_options[prev_selection_index]);
+
+        // Linea 2: Mostrar la opcion seleccionada, con el cursor
+        lcd_set_cursor(0, 1);
+        lcd_write_string(">");
+        lcd_set_cursor(1, 1);
+        lcd_write_string(menu_options[current_selection]);
+    } else {
+        // En caso de que no haya opciones
+        lcd_set_cursor(0, 0);
+        lcd_write_string("Sin Menu");
+    }
+}
 
 /**
  * @brief Envía un nibble (4 bits) al bus de datos del LCD.
@@ -201,26 +237,35 @@ void lcd_display_task(void *pvParameters) {
     lcd_write_string("O       ");
     vTaskDelay(pdMS_TO_TICKS(1000)); // Esperar 1 segundo
 
+    refresh_lcd_display(); // Muestra el menu inicial
+
+    button_event_t received_event;
+
     while (1) {
-        // Actualizar línea 1
-        // lcd_set_cursor(0, 0);
-        // char temp_line1[LCD_COLS + 1];
-        // strncpy(temp_line1, g_lcd_line1, LCD_COLS);
-        // temp_line1[LCD_COLS] = '\0'; // Asegurar terminación nula
-        // lcd_write_string(temp_line1);
+        // Recepciona la cola de eventos del teclado
+        if (xQueueReceive(button_event_queue, &received_event, portMAX_DELAY) == pdPASS) {
+            ESP_LOGD(TAG_MENU, "Evento de boton recibido, procesando...");
+            
+            // Actualiza el estado del menu segun el evento
+            switch (received_event) {
+                case EVENT_BUTTON_UP:
+                    current_selection = (current_selection - 1 + NUM_MENU_OPTIONS) % NUM_MENU_OPTIONS;
+                    ESP_LOGI(TAG_MENU, "UP presionado. Nueva seleccion: %s", menu_options[current_selection]);
+                    break;
+                case EVENT_BUTTON_DOWN:
+                    current_selection = (current_selection + 1) % NUM_MENU_OPTIONS;
+                    ESP_LOGI(TAG_MENU, "DOWN presionado. Nueva seleccion: %s", menu_options[current_selection]);
+                    break;
+                case EVENT_BUTTON_SELECT:
+                    ESP_LOGI(TAG_MENU, "SELECT presionado. Opcion elegida: %s", menu_options[current_selection]);
+                    // Aqui iria la logica para ejecutar la accion seleccionada
+                    // Por ejemplo, podrias enviar otro evento a una tarea de "Acciones"
+                    break;
+            }
+            // Llama a la funcion de refresco para mostrar el nuevo estado
+            refresh_lcd_display();
+        }
 
-        // // Actualizar línea 2
-        // lcd_set_cursor(0, 1);
-        // char temp_line2[LCD_COLS + 1];
-        // strncpy(temp_line2, g_lcd_line2, LCD_COLS);
-        // temp_line2[LCD_COLS] = '\0'; // Asegurar terminación nula
-        // lcd_write_string(temp_line2);
-
-        // ESP_LOGD(TAG, "LCD actualizado: '%s' | '%s'", g_lcd_line1, g_lcd_line2);
-        
-
-        // Delay de actualización del display. Ajusta según tus necesidades.
-        // Un delay de 100ms a 500ms suele ser suficiente para actualizaciones visibles.
         vTaskDelay(pdMS_TO_TICKS(250));
     }
 }

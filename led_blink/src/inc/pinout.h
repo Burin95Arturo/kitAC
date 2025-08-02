@@ -11,7 +11,7 @@
 #define IR_PIN              GPIO_NUM_32     // Pin IR
 #define HX711_DOUT_PIN      GPIO_NUM_18     // Pin de datos (DOUT) del HX711
 #define HX711_PD_SCK_PIN    GPIO_NUM_19     // Pin de reloj (PD_SCK) del HX711
-#define BUTTON_UP_PIN       GPIO_NUM_13     // Botón para "Arriba" o "Incrementar"
+#define BUTTON_UP_PIN       GPIO_NUM_9     // Botón para "Arriba" o "Incrementar"
 #define BUTTON_DOWN_PIN     GPIO_NUM_12     // Botón para "Abajo" o "Disminuir"
 #define BUTTON_SELECT_PIN   GPIO_NUM_14   // Botón para "Seleccionar" o "Confirmar"
 //2da balanza 

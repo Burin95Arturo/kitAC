@@ -17,10 +17,14 @@
 #include "inc/buttons.h"
 #include "inc/display_lcd.h"
 #include "inc/balanza_2.h"
+#include "inc/program.h"
+#include <freertos/queue.h>
 
 static const char *TAG = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
+
+QueueHandle_t button_event_queue = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -117,13 +121,21 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
 
+    // Crear la cola de eventos antes de crear las tareas que la usaran
+    button_event_queue = xQueueCreate(10, sizeof(button_event_t));
+    if (button_event_queue == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear la cola de eventos. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+    
     // Inicializacion de tareas
     //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
 }
