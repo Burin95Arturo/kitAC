@@ -16,8 +16,11 @@
 #include "inc/balanza.h"
 #include "inc/buttons.h"
 #include "inc/display_lcd.h"
+#include "inc/balanza_2.h"
 
 static const char *TAG = "MSJ";
+static const char *TAG_MAIN = "APP_MAIN";
+static const char *TAG_GPIO = "GPIO_INIT";
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -51,6 +54,10 @@ void user_init(void) {
     io_conf.pin_bit_mask = (1ULL << HX711_PD_SCK_PIN);
     gpio_config(&io_conf);
     ESP_LOGI(TAG, "GPIO %d (HX711_PD_SCK) configurado como salida.", HX711_PD_SCK_PIN);
+
+    io_conf.pin_bit_mask = (1ULL << HX711_2_PD_SCK_PIN);
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG, "GPIO %d (HX711_2_PD_SCK) configurado como salida.", HX711_2_PD_SCK_PIN);
 
     // --- Configuración de Pines de ENTRADA ---
     // (ECHO, HALL, IR, HX711_DOUT)
@@ -104,27 +111,48 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_SELECT_PIN);
 
+    io_conf.pin_bit_mask = (1ULL << HX711_2_DOUT_PIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // ¡DESHABILITADO!
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // ¡DESHABILITADO!
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
+
     // Inicializacion de tareas
     //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
 }
+
+// void app_main(void)
+// {
+//     user_init();
+
+//     while(true)
+//     {
+//         // vTaskDelay(portTICK_PERIOD_MS); // Evita el watchdog
+//         // vTaskDelay(pdMS_TO_TICKS(1000));
+//     }
+// }
 
 void app_main(void)
 {
+    esp_log_level_set(TAG_MAIN, ESP_LOG_INFO);
+    esp_log_level_set(TAG_GPIO, ESP_LOG_INFO);
+
+    ESP_LOGI(TAG_MAIN, "Iniciando app_main()...");
     user_init();
+    
+    // ¡IMPORTANTE! app_main() debe terminar su ejecución aquí.
+    // FreeRTOS se encargará de ejecutar las tareas que has creado.
+    // NO PONER UN BUCLE while(true) VACÍO AQUÍ.
+    ESP_LOGI(TAG_MAIN, "app_main() ha finalizado. Las tareas de FreeRTOS estan ahora ejecutandose.");
 
-    while(true)
-    {
-        // vTaskDelay(portTICK_PERIOD_MS); // Evita el watchdog
-        // vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }
-
 
 /* SIN FREERTOS */
 

@@ -2,17 +2,7 @@
 // Date: 20/06/2025
 
 #include "inc/display_lcd.h"
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "esp_log.h"
-#include "esp_rom_sys.h" // Para esp_rom_delay_us
-#include "inc/pinout.h"
 
-#include "esp_rom_caps.h"
-#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
 
 // --- Definiciones para el Display ---
 #define LCD_COLS 8 // Número de columnas (caracteres por línea)
@@ -203,7 +193,7 @@ void lcd_display_task(void *pvParameters) {
     ESP_LOGI(TAG, "Tarea de display LCD iniciada.");
 
     lcd_init(); // Inicializar el LCD al inicio de la tarea
-
+    
     // Mensaje de bienvenida inicial (se sobreescribirá pronto)
     lcd_set_cursor(0, 0);
     lcd_write_string("INICIAND");
@@ -213,20 +203,21 @@ void lcd_display_task(void *pvParameters) {
 
     while (1) {
         // Actualizar línea 1
-        lcd_set_cursor(0, 0);
-        char temp_line1[LCD_COLS + 1];
-        strncpy(temp_line1, g_lcd_line1, LCD_COLS);
-        temp_line1[LCD_COLS] = '\0'; // Asegurar terminación nula
-        lcd_write_string(temp_line1);
+        // lcd_set_cursor(0, 0);
+        // char temp_line1[LCD_COLS + 1];
+        // strncpy(temp_line1, g_lcd_line1, LCD_COLS);
+        // temp_line1[LCD_COLS] = '\0'; // Asegurar terminación nula
+        // lcd_write_string(temp_line1);
 
-        // Actualizar línea 2
-        lcd_set_cursor(0, 1);
-        char temp_line2[LCD_COLS + 1];
-        strncpy(temp_line2, g_lcd_line2, LCD_COLS);
-        temp_line2[LCD_COLS] = '\0'; // Asegurar terminación nula
-        lcd_write_string(temp_line2);
+        // // Actualizar línea 2
+        // lcd_set_cursor(0, 1);
+        // char temp_line2[LCD_COLS + 1];
+        // strncpy(temp_line2, g_lcd_line2, LCD_COLS);
+        // temp_line2[LCD_COLS] = '\0'; // Asegurar terminación nula
+        // lcd_write_string(temp_line2);
 
-        ESP_LOGD(TAG, "LCD actualizado: '%s' | '%s'", g_lcd_line1, g_lcd_line2);
+        // ESP_LOGD(TAG, "LCD actualizado: '%s' | '%s'", g_lcd_line1, g_lcd_line2);
+        
 
         // Delay de actualización del display. Ajusta según tus necesidades.
         // Un delay de 100ms a 500ms suele ser suficiente para actualizaciones visibles.

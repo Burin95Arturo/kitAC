@@ -9,6 +9,8 @@
         "gpio.h": "c",
         "stdio.h": "c",
         "freertos.h": "c",
-        "display_lcd.h": "c"
+        "display_lcd.h": "c",
+        "balanza_2.h": "c",
+        "esp_timer.h": "c"
     }
 }
