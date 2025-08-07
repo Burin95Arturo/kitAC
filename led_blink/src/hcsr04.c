@@ -9,7 +9,12 @@
 #include "esp_rom_caps.h"
 #include "esp_timer.h" // Incluye esp_timer para medir el tiempo
 #include "inc/pinout.h"
+#include "esp_log.h"
+#include "inc/program.h"
 
+
+// --- Tag para el logging del ESP-IDF ---
+static const char *TAG = "HCSR04";
 
 long getDistance() {
     gpio_set_level(TRIG_PIN, 0);
@@ -37,7 +42,7 @@ long getDistance() {
 
 void hc_sr04_task(void *pvParameters) {
     long distance;
-
+    float current_height_m;
     while (1) {
         distance = getDistance();
         printf("Distancia: %ld cm\n", distance);
@@ -46,6 +51,12 @@ void hc_sr04_task(void *pvParameters) {
             gpio_set_level(LED_PIN, 1);
         } else {
             gpio_set_level(LED_PIN, 0);
+        }
+
+        current_height_m = (long) distance;
+        // Enviar el peso calculado a la cola
+        if (xQueueSend(height_queue, &current_height_m, (TickType_t)0) != pdPASS) {
+            ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");
         }
 
         vTaskDelay(pdMS_TO_TICKS(500));

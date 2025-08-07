@@ -25,6 +25,8 @@ static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
 
 QueueHandle_t button_event_queue = NULL;
+QueueHandle_t weight_queue = NULL;
+QueueHandle_t height_queue = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -128,13 +130,25 @@ void user_init(void) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         esp_restart();
     }
+
+    weight_queue = xQueueCreate(1, sizeof(float));
+    if (weight_queue == NULL) {
+        ESP_LOGE("MAIN", "No se pudo crear la cola de peso.");
+        return;
+    }
+
+    height_queue = xQueueCreate(1, sizeof(float));
+    if (height_queue == NULL) {
+        ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
+        return;
+    }
     
     // Inicializacion de tareas
-    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);

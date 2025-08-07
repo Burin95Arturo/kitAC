@@ -12,6 +12,7 @@
         "display_lcd.h": "c",
         "balanza_2.h": "c",
         "esp_timer.h": "c",
-        "queue.h": "c"
+        "queue.h": "c",
+        "program.h": "c"
     }
 }

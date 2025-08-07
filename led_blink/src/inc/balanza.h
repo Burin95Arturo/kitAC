@@ -2,6 +2,7 @@
 // Date: 10/06/2025
 
 #include "pinout.h"
+#include "program.h"
 
 // --- Configuración del HX711 ---
 // Ganancia para el Canal A:

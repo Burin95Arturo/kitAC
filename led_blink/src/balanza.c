@@ -125,37 +125,40 @@ void balanza_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
     long current_raw_value = 1;
-    long promedio = 0;
+    
     long contador_promedio = 0;
+    float current_weight_kg = 0.0f;
+    long promedio_raw = 0;
     ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    
     while (1) {
          
         current_raw_value = hx711_read_raw();
-        promedio = current_raw_value + promedio;
-        hx711_raw_reading = current_raw_value; // Actualizar variable global (volatile)
+        promedio_raw += current_raw_value;
         contador_promedio++;
-        // Calcular el peso en kilogramos usando los valores de calibración
-        // Asegúrate de que SCALE_FACTOR_VALUE seagit  un float para la división.
-        // if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-        //     hx711_weight_kg = ((float)current_raw_value - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-        // } else {
-        //     hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-        //     ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-        // }
 
-        if(contador_promedio == 10){
-            contador_promedio = 0;
-
-            if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-                hx711_weight_kg = ((float)(promedio/10) - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+         if (contador_promedio >= 10) {
+            promedio_raw = promedio_raw / 10;
+            
+            if (SCALE_FACTOR_VALUE != 0.0f) {
+                current_weight_kg = ((float)promedio_raw - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
             } else {
-                hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
+                current_weight_kg = 0.0f;
                 ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
             }
+            
+            // Enviar el peso calculado a la cola
+            if (xQueueSend(weight_queue, &current_weight_kg, (TickType_t)0) != pdPASS) {
+                ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");
+            }
+            
+            ESP_LOGI(TAG, "Raw Value: %ld", current_raw_value);
 
-            ESP_LOGI(TAG, "Lectura cruda HX711: %ld | Peso: %.3f Kg", promedio/10, hx711_weight_kg);
-            hx711_weight_kg_public = hx711_weight_kg;
-            promedio = 0;
+            ESP_LOGI(TAG, "Peso promediado: %.3f Kg", current_weight_kg);
+
+            // Reiniciar el promedio
+            promedio_raw = 0;
+            contador_promedio = 0;
         }  
 
         vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
