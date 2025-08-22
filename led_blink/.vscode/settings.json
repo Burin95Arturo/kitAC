@@ -14,5 +14,6 @@
         "esp_timer.h": "c",
         "queue.h": "c",
         "program.h": "c"
-    }
+    },
+    "idf.pythonInstallPath": "c:\\ESP32\\tools\\idf-python\\3.11.2\\python.exe"
 }

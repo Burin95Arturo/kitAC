@@ -1,0 +1,22 @@
+// Author: Federico Cañete  
+// Date: 08/21/2025
+
+#include "inc/central.h"
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_rom_caps.h"
+#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
+#include "inc/pinout.h"
+
+
+void central_task(void *pvParameters) {
+
+    while (1) {
+        
+    
+        
+       vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
