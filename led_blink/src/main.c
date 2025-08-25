@@ -18,11 +18,26 @@
 #include "inc/display_lcd.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
+#include "inc/tasktest.h"
 #include <freertos/queue.h>
 
 static const char *TAG = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
+
+typedef struct {
+    uint8_t origen;
+    long altura;
+    const char *name;
+} sensor_t;
+
+typedef enum {
+    SENSOR_ALTURA=0,
+    SENSOR_HALL,
+    SENSOR_IR,
+    SENSOR_BALANZA,
+    SENSOR_BALANZA_2
+} sensor_origen_t;
 
 QueueHandle_t button_event_queue = NULL;
 QueueHandle_t weight_queue = NULL;
