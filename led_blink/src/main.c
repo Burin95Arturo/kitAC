@@ -21,6 +21,7 @@
 // Definiciones de sensor_origen_t y data_t se moverán a program.h
 
 #include "inc/tasktest.h"
+#include "inc/central.h"
 #include <freertos/queue.h>
 
 static const char *TAG = "MSJ";
@@ -33,6 +34,8 @@ QueueHandle_t button_event_queue = NULL;
 QueueHandle_t weight_queue = NULL;
 QueueHandle_t height_queue = NULL;
 QueueHandle_t central_queue = NULL;
+
+SemaphoreHandle_t acelerometro_semaphore = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -137,6 +140,14 @@ void user_init(void) {
         esp_restart();
     }
 
+    // Crear el semáforo binario para acelerómetro
+    acelerometro_semaphore = xSemaphoreCreateBinary();
+    if (acelerometro_semaphore == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario acelerometro_semaphore. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     weight_queue = xQueueCreate(1, sizeof(float));
     if (weight_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de peso.");
@@ -156,15 +167,20 @@ void user_init(void) {
     }
 
     // Inicializacion de tareas
-    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+
+    //estas tareas las deshabilite para probar tasktest
+            //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+            //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    //estas ya estaban así
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+
+            //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+            //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+            //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
     xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
+    xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
 }
 
 // void app_main(void)

@@ -8,6 +8,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "freertos/semphr.h"
+
 typedef enum {
     EVENT_BUTTON_UP,
     EVENT_BUTTON_DOWN,
@@ -18,6 +20,8 @@ extern QueueHandle_t button_event_queue;
 extern QueueHandle_t weight_queue;       // Cola para los datos de peso (float)
 extern QueueHandle_t height_queue;       // Cola para los datos de altura (float)
 extern QueueHandle_t central_queue;
+extern SemaphoreHandle_t acelerometro_semaphore; // Semáforo binario para el acelerómetro
+
 
 typedef enum {
     SENSOR_ALTURA=0,
