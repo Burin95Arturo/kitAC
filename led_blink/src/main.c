@@ -18,6 +18,8 @@
 #include "inc/display_lcd.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
+// Definiciones de sensor_origen_t y data_t se moverán a program.h
+
 #include "inc/tasktest.h"
 #include <freertos/queue.h>
 
@@ -25,23 +27,12 @@ static const char *TAG = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
 
-typedef struct {
-    uint8_t origen;
-    long altura;
-    const char *name;
-} sensor_t;
-
-typedef enum {
-    SENSOR_ALTURA=0,
-    SENSOR_HALL,
-    SENSOR_IR,
-    SENSOR_BALANZA,
-    SENSOR_BALANZA_2
-} sensor_origen_t;
+#define MAX_LENGHT_QUEUE 10
 
 QueueHandle_t button_event_queue = NULL;
 QueueHandle_t weight_queue = NULL;
 QueueHandle_t height_queue = NULL;
+QueueHandle_t central_queue = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -157,7 +148,13 @@ void user_init(void) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
         return;
     }
-    
+
+    central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
+    if (central_queue == NULL) {
+        ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
+        return;
+    }
+
     // Inicializacion de tareas
     xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
@@ -167,6 +164,7 @@ void user_init(void) {
     xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
 }
 
 // void app_main(void)

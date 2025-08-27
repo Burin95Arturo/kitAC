@@ -1,21 +1,23 @@
 #include "inc/tasktest.h"
 
 
-static bool getIrSensorState(void);
+void tasktest(void *pvParameters) {
 
-static bool getIrSensorState(void){
-    
-    return gpio_get_level(IR_PIN);
-}
-
-void ir_sensor_task(void *pvParameters) {
+    static data_t test;
+    test.origen = TEST_TASK;
+    test.altura = 123;
+    test.peso = 45.67f;
+    test.on_off = true;
 
     while (1) {
         
-        //esp_rom_delay_us(10);
-
-        gpio_set_level(LED_PIN, getIrSensorState());
-        
-       //vTaskDelay(pdMS_TO_TICKS(100));
+        if (xQueueSend(central_queue, &test, (TickType_t)0) != pdPASS) {
+            ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");
+        }
+    
+        test.altura += 1;
+        test.peso += 0.1f;
+        test.on_off = !test.on_off;
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

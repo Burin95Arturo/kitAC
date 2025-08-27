@@ -17,6 +17,23 @@ typedef enum {
 extern QueueHandle_t button_event_queue;
 extern QueueHandle_t weight_queue;       // Cola para los datos de peso (float)
 extern QueueHandle_t height_queue;       // Cola para los datos de altura (float)
+extern QueueHandle_t central_queue;
 
+typedef enum {
+    SENSOR_ALTURA=0,
+    SENSOR_HALL,
+    SENSOR_IR,
+    SENSOR_BALANZA,
+    TEST_TASK
+} sensor_origen_t;
+
+typedef struct {
+    sensor_origen_t origen;
+    long altura;
+    float peso;
+    bool on_off;
+} data_t;
+
+static const char *TAG;
 
 #endif
