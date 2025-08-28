@@ -17,6 +17,6 @@ typedef enum {
 extern QueueHandle_t button_event_queue;
 extern QueueHandle_t weight_queue;       // Cola para los datos de peso (float)
 extern QueueHandle_t height_queue;       // Cola para los datos de altura (float)
-
+extern QueueHandle_t error_queue;       // Cola para los codigos de error (char)
 
 #endif

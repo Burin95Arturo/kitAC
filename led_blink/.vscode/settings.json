@@ -13,6 +13,7 @@
         "balanza_2.h": "c",
         "esp_timer.h": "c",
         "queue.h": "c",
-        "program.h": "c"
+        "program.h": "c",
+        "semphr.h": "c"
     }
 }

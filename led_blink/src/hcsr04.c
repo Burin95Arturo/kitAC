@@ -54,6 +54,11 @@ void hc_sr04_task(void *pvParameters) {
         }
 
         current_height_m = (long) distance;
+
+        if (current_height_m <= 0 || current_height_m >= 1.5){ // Evaluo el rango de 0 a 1.5m de altura, mas no va a haber
+            xQueueSend(error_queue, "A", (TickType_t)0); // Envio codigo de error en Altura
+        }
+
         // Enviar el peso calculado a la cola
         if (xQueueSend(height_queue, &current_height_m, (TickType_t)0) != pdPASS) {
             ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");

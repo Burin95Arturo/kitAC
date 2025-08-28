@@ -27,6 +27,7 @@ static const char *TAG_GPIO = "GPIO_INIT";
 QueueHandle_t button_event_queue = NULL;
 QueueHandle_t weight_queue = NULL;
 QueueHandle_t height_queue = NULL;
+QueueHandle_t error_queue = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -140,6 +141,12 @@ void user_init(void) {
     height_queue = xQueueCreate(1, sizeof(float));
     if (height_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
+        return;
+    }
+
+    error_queue = xQueueCreate(1, sizeof(char));
+    if (error_queue == NULL) {
+        ESP_LOGE("MAIN", "No se pudo crear la cola de peso.");
         return;
     }
     

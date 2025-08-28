@@ -34,7 +34,9 @@ static void idle_100_action(void);
 typedef enum {
     MENU_STATE_NAVIGATING,  // Estado normal de navegacion del menu
     MENU_STATE_WEIGHING,    // Estado especial para mostrar el peso
-    MENU_STATE_HEIGHT       // Estado especial para mostrar la altura
+    MENU_STATE_TARAR,       // Estado especial para mostrar el peso de la tara
+    MENU_STATE_HEIGHT,      // Estado especial para mostrar la altura
+    MENU_STATE_ERRORS       // Estado especial para mostrar errores
 } menu_state_t;
 
 // --- Estructura para un elemento de menu ---
@@ -152,6 +154,7 @@ static menu_item_t *parent_menu_ptr = NULL;
 static menu_state_t current_state = MENU_STATE_NAVIGATING;
 static float current_weight_display = 0.0f;
 static float current_height_display = 0.0f;
+static char current_error_display[8];
 
 /**
  * @brief Envía un nibble (4 bits) al bus de datos del LCD.
@@ -346,7 +349,29 @@ static void refresh_lcd_display(void) {
         lcd_write_float(current_weight_display, 7, 2);
         
     }
+    else if (current_state == MENU_STATE_TARAR) {
+        lcd_set_cursor(0, 0);
+        strncpy(line_buffer, "Tarar.Kg", LCD_COLS);
+        line_buffer[LCD_COLS] = '\0';
+        lcd_write_string(line_buffer);
+        
+        // Formatear el peso para mostrar en la segunda linea
+        lcd_set_cursor(0, 1);
+        lcd_write_float(current_weight_display, 7, 2);
+        
+    }
     else if (current_state == MENU_STATE_HEIGHT) {
+        lcd_set_cursor(0, 0);
+        strncpy(line_buffer, "Errores.", LCD_COLS);
+        line_buffer[LCD_COLS] = '\0';
+        lcd_write_string(line_buffer);
+        
+        // Formatear el peso para mostrar en la segunda linea
+        lcd_set_cursor(0, 1);
+        lcd_write_string(current_error_display); // Son 8 caracteres
+        
+    } 
+    else if (current_state == MENU_STATE_ERRORS) {
         lcd_set_cursor(0, 0);
         strncpy(line_buffer, "Altura..", LCD_COLS);
         line_buffer[LCD_COLS] = '\0';
@@ -419,6 +444,7 @@ void lcd_display_task(void *pvParameters) {
     button_event_t received_event;
     float received_weight;
     float received_height;
+    char received_error[8];
 
     while (1) {
         if (current_state == MENU_STATE_NAVIGATING) {
@@ -479,6 +505,11 @@ void lcd_display_task(void *pvParameters) {
                             current_state = MENU_STATE_HEIGHT;
                             refresh_lcd_display();
                         } 
+                        else if (strcmp(selected_item->text, "Tarar") == 0) {
+                            ESP_LOGI(TAG_MENU, "Entrando en modo de tara...");
+                            current_state = MENU_STATE_TARAR;
+                            refresh_lcd_display();
+                        } 
                         else if (selected_item->action) {
                             selected_item->action();
                         }
@@ -487,6 +518,19 @@ void lcd_display_task(void *pvParameters) {
                 refresh_lcd_display();
             }
         } else if (current_state == MENU_STATE_WEIGHING) {
+            // Espera por un evento de la cola de botones o de la cola de peso.
+            // No bloquea para siempre, si no hay nada en 100ms, refresca el display.
+            if (xQueueReceive(weight_queue, &received_weight, pdMS_TO_TICKS(100)) == pdPASS) {
+                current_weight_display = received_weight;
+                refresh_lcd_display();
+            }
+            
+            if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
+                ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
+                current_state = MENU_STATE_NAVIGATING;
+                refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
+            }
+        } else if (current_state == MENU_STATE_TARAR) {
             // Espera por un evento de la cola de botones o de la cola de peso.
             // No bloquea para siempre, si no hay nada en 100ms, refresca el display.
             if (xQueueReceive(weight_queue, &received_weight, pdMS_TO_TICKS(100)) == pdPASS) {
@@ -510,13 +554,22 @@ void lcd_display_task(void *pvParameters) {
                 current_state = MENU_STATE_NAVIGATING;
                 refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
             }
+        } else if (current_state == MENU_STATE_ERRORS) {
+            if (xQueueReceive(error_queue, &received_error, pdMS_TO_TICKS(100)) == pdPASS) {
+                strcpy(current_error_display,received_error);
+                refresh_lcd_display();
+            }
+            
+            if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
+                ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
+                current_state = MENU_STATE_NAVIGATING;
+                refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
+            }
         }
     }
 }
 
 // --- Implementaciones de funciones de accion (DUMMY) ---
-static void balance_tare_action(void) { ESP_LOGI(TAG_MENU, "Accion: Tarar Balanza"); }
-static void balance_calibrate_action(void) { ESP_LOGI(TAG_MENU, "Accion: Calibrar Balanza"); }
 static void balance_errors_action(void) { ESP_LOGI(TAG_MENU, "Accion: Errores Balanza"); }
 static void inclination_head_action(void) { ESP_LOGI(TAG_MENU, "Accion: Mover cabecera"); }
 static void inclination_foot_action(void) { ESP_LOGI(TAG_MENU, "Accion: Mover piecera"); }
@@ -540,6 +593,14 @@ static void height_status_action(void) {
     ESP_LOGI(TAG_MENU, "Accion: Estado Altura"); 
 }
 
+static void balance_calibrate_action(void) { 
+    ESP_LOGI(TAG_MENU, "Accion: Calibrar Balanza"); 
+}
+
+static void balance_tare_action(void) { 
+    ESP_LOGI(TAG_MENU, "Accion: Tarar Balanza"); 
+    balanza_tarar();
+}
 
 // // --- Función principal de la aplicación ESP-IDF ---
 // void app_main(void) {

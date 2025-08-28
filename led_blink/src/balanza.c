@@ -9,6 +9,7 @@
 #include "esp_timer.h" // Incluye esp_timer para medir el tiempo
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "inc/balanza.h"
 
 volatile long hx711_raw_reading = 0;
 volatile long hx711_weight_kg_public;
@@ -17,6 +18,9 @@ volatile long hx711_weight_kg_public;
 static void hx711_init(void);
 static bool hx711_wait_ready(TickType_t timeout_ticks);
 static long hx711_read_raw(void);
+static void balanza_tarar_on(void);
+
+static int tarar_action = 0;
 
 // --- Tag para el logging del ESP-IDF ---
 static const char *TAG = "HX711_DRIVER";
@@ -25,10 +29,12 @@ static const char *TAG = "HX711_DRIVER";
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
 // Obtén este valor promediando varias lecturas sin carga.
 #define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga (promediado 10)
+static long zero = ZERO_OFFSET_VALUE;
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 #define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
+static float scale_factor_value = SCALE_FACTOR_VALUE;
 
 // --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
 volatile float hx711_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
@@ -121,6 +127,8 @@ static long hx711_read_raw(void) {
     return data;
 }
 
+static long promedio_raw = 0;
+
 void balanza_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
@@ -128,7 +136,7 @@ void balanza_task(void *pvParameters){
     
     long contador_promedio = 0;
     float current_weight_kg = 0.0f;
-    long promedio_raw = 0;
+    
     ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
     
     while (1) {
@@ -140,8 +148,13 @@ void balanza_task(void *pvParameters){
          if (contador_promedio >= 10) {
             promedio_raw = promedio_raw / 10;
             
+            if (tarar_action == 1) {
+                zero = promedio_raw;
+                tarar_action = 0;
+            }
+
             if (SCALE_FACTOR_VALUE != 0.0f) {
-                current_weight_kg = ((float)promedio_raw - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+                current_weight_kg = ((float)promedio_raw - (float)zero) / SCALE_FACTOR_VALUE;
             } else {
                 current_weight_kg = 0.0f;
                 ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
@@ -159,8 +172,20 @@ void balanza_task(void *pvParameters){
             // Reiniciar el promedio
             promedio_raw = 0;
             contador_promedio = 0;
-        }  
+        } 
 
         vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
     }
+}
+
+void balanza_tarar(void) {
+    balanza_tarar_on();
+}
+
+void balanza_calibrar(void) {
+    // scale_factor_value = ;
+}
+
+static void balanza_tarar_on(void) {
+    tarar_action = 1;
 }

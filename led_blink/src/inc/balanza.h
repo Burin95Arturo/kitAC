@@ -12,3 +12,4 @@
 #define HX711_GAIN_128 1 // Selecciona la ganancia para el canal A (1 para 128, 0 para 64)
 
 void balanza_task(void *pvParameters);
+void balanza_tarar(void);

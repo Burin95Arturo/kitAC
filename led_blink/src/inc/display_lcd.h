@@ -10,7 +10,7 @@
 #include "esp_rom_sys.h" // Para esp_rom_delay_us
 #include "inc/pinout.h"
 #include "inc/program.h"
-
+#include "inc/balanza.h"
 #include "esp_rom_caps.h"
 #include "esp_timer.h" // Incluye esp_timer para medir el tiempo
 
@@ -19,3 +19,5 @@ void lcd_init(void);
 void lcd_clear(void);
 void lcd_set_cursor(uint8_t col, uint8_t row);
 void lcd_write_string(const char *str);
+
+extern void balanza_tarar(void);
