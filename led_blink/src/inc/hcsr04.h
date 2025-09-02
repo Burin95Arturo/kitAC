@@ -1,4 +1,15 @@
-// Author: Burin Arturo
-// Date: 11/04/2025
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_rom_caps.h"
+#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
+#include "inc/pinout.h"
+#include "esp_log.h"
+#include "inc/program.h"
+#include <freertos/queue.h>
+
+// --- Tag para el logging del ESP-IDF ---
+static const char *TAG_3 = "HCSR04";
 
 void hc_sr04_task(void *pvParameters);

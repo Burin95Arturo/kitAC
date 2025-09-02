@@ -1,34 +1,8 @@
-// Author: Burin Arturo
-// Date: 10/06/2025
-
 #include "inc/balanza.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_rom_caps.h"
-#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
-#include "driver/gpio.h"
-#include "esp_log.h"
+
 
 volatile long hx711_raw_reading = 0;
 volatile long hx711_weight_kg_public;
-
-// --- Prototipos de funciones ---
-static void hx711_init(void);
-static bool hx711_wait_ready(TickType_t timeout_ticks);
-static long hx711_read_raw(void);
-
-// --- Tag para el logging del ESP-IDF ---
-static const char *TAG = "HX711_DRIVER";
-
-// --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
-// Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
-// Obtén este valor promediando varias lecturas sin carga.
-#define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga (promediado 10)
-
-// Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
-// Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
-#define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 // --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
 volatile float hx711_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
@@ -47,7 +21,7 @@ static void hx711_init(void) {
     gpio_set_direction(HX711_PD_SCK_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(HX711_PD_SCK_PIN, 0); // Poner PD_SCK en LOW al inicio (modo activo)
 
-    ESP_LOGI(TAG, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_DOUT_PIN, HX711_PD_SCK_PIN);
+    ESP_LOGI(TAG_2, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_DOUT_PIN, HX711_PD_SCK_PIN);
     
     // El HX711 se enciende si PD_SCK está LOW. Si estaba en power-down, tomará un tiempo (aprox 50us) para estabilizarse.
     // Aunque hx711_wait_ready() se encargará de esperar.
@@ -62,7 +36,7 @@ static bool hx711_wait_ready(TickType_t timeout_ticks) {
     TickType_t start_time = xTaskGetTickCount();
     while (gpio_get_level(HX711_DOUT_PIN) == 1) { // DOUT HIGH significa que no está listo
         if ((xTaskGetTickCount() - start_time) > timeout_ticks) {
-            ESP_LOGW(TAG, "HX711: Timeout esperando que DOUT se ponga en LOW.");
+            ESP_LOGW(TAG_2, "HX711: Timeout esperando que DOUT se ponga en LOW.");
             return false; // Timeout
         }
         vTaskDelay(1); // Esperar un tick para ceder CPU y no bloquear completamente
@@ -129,38 +103,44 @@ void balanza_task(void *pvParameters){
     long contador_promedio = 0;
     float current_weight_kg = 0.0f;
     long promedio_raw = 0;
-    ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    ESP_LOGI(TAG_2, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    data_t peso_data;
     
     while (1) {
-         
-        current_raw_value = hx711_read_raw();
-        promedio_raw += current_raw_value;
-        contador_promedio++;
+        
+        if (xSemaphoreTake(peso_semaphore, portMAX_DELAY) == pdTRUE) {
 
-         if (contador_promedio >= 10) {
-            promedio_raw = promedio_raw / 10;
-            
-            if (SCALE_FACTOR_VALUE != 0.0f) {
-                current_weight_kg = ((float)promedio_raw - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-            } else {
-                current_weight_kg = 0.0f;
-                ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-            }
-            
-            // Enviar el peso calculado a la cola
-            if (xQueueSend(weight_queue, &current_weight_kg, (TickType_t)0) != pdPASS) {
-                ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");
-            }
-            
-            ESP_LOGI(TAG, "Raw Value: %ld", current_raw_value);
+            current_raw_value = hx711_read_raw();
+            promedio_raw += current_raw_value;
+            contador_promedio++;
 
-            ESP_LOGI(TAG, "Peso promediado: %.3f Kg", current_weight_kg);
+            if (contador_promedio >= 10) {
+                promedio_raw = promedio_raw / 10;
+                
+                if (SCALE_FACTOR_VALUE != 0.0f) {
+                    current_weight_kg = ((float)promedio_raw - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+                } else {
+                    current_weight_kg = 0.0f;
+                    ESP_LOGE(TAG_2, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+                }
+                
+                // Enviar el peso calculado a la cola
+                peso_data.origen = SENSOR_BALANZA;
+                peso_data.peso = current_weight_kg;
+                if (xQueueSend(central_queue, &peso_data, (TickType_t)0) != pdPASS) {
+                    ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
+                }
+                
+                ESP_LOGI(TAG_2, "Raw Value: %ld", current_raw_value);
 
-            // Reiniciar el promedio
-            promedio_raw = 0;
-            contador_promedio = 0;
-        }  
+                ESP_LOGI(TAG_2, "Peso promediado: %.3f Kg", current_weight_kg);
 
+                // Reiniciar el promedio
+                promedio_raw = 0;
+                contador_promedio = 0;
+            }  
+
+        }
         vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
     }
 }

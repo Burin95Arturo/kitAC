@@ -12,7 +12,7 @@ void tasktest(void *pvParameters) {
     while (1) {
         
         // Tomar el semáforo binario acelerometro_semaphore. Si no puede, se bloquea.
-        if (xSemaphoreTake(acelerometro_semaphore, portMAX_DELAY) == pdTRUE) {
+        if (xSemaphoreTake(task_test_semaphore, portMAX_DELAY) == pdTRUE) {
             
             test.altura += 1;
             test.peso += 0.1f;

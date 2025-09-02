@@ -1,22 +1,17 @@
-// Author: Federico Cañete  
-// Date: 08/21/2025
-
 #include "inc/central.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "esp_rom_caps.h"
-#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
-#include "inc/pinout.h"
 
 
 void central_task(void *pvParameters) {
 
     while (1) {
         // Da el semáforo binario para que tasktest pueda funcionar
-        xSemaphoreGive(acelerometro_semaphore);
-
+        xSemaphoreGive(task_test_semaphore);
+        xSemaphoreGive(peso_semaphore);
+        xSemaphoreGive(hall_semaphore);
+        xSemaphoreGive(ir_semaphore);  
+        xSemaphoreGive(altura_semaphore);
+        xSemaphoreGive(button_semaphore);
+        
         // Leer de la cola central_queue
         data_t received_data;
         if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {

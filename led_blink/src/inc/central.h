@@ -1,5 +1,3 @@
-// Author: Federico Cañete  
-// Date: 08/21/2025
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

@@ -423,93 +423,93 @@ void lcd_display_task(void *pvParameters) {
     while (1) {
         if (current_state == MENU_STATE_NAVIGATING) {
 
-            if (xQueueReceive(button_event_queue, &received_event, portMAX_DELAY) == pdPASS) {
-                int num_options = 0;
-                if (current_menu_ptr == menu_options_balanza) {
-                    num_options = NUM_MENU_OPTIONS_BALANZA;
-                } else if (current_menu_ptr == menu_options_inclinacion) {
-                    num_options = NUM_MENU_OPTIONS_INCLINACION;
-                } else if (current_menu_ptr == menu_options_altura) {
-                    num_options = NUM_MENU_OPTIONS_ALTURA;
-                } else if (current_menu_ptr == menu_options_barandas) {
-                    num_options = NUM_MENU_OPTIONS_BARANDAS;
-                } else if (current_menu_ptr == menu_options_freno) {
-                    num_options = NUM_MENU_OPTIONS_FRENO;
-                } else if (current_menu_ptr == menu_options_idle) {
-                    num_options = NUM_MENU_OPTIONS_IDLE;
-                } else {
-                    num_options = NUM_MAIN_MENU_OPTIONS;
-                }
+            // if (xQueueReceive(button_event_queue, &received_event, portMAX_DELAY) == pdPASS) {
+            //     int num_options = 0;
+            //     if (current_menu_ptr == menu_options_balanza) {
+            //         num_options = NUM_MENU_OPTIONS_BALANZA;
+            //     } else if (current_menu_ptr == menu_options_inclinacion) {
+            //         num_options = NUM_MENU_OPTIONS_INCLINACION;
+            //     } else if (current_menu_ptr == menu_options_altura) {
+            //         num_options = NUM_MENU_OPTIONS_ALTURA;
+            //     } else if (current_menu_ptr == menu_options_barandas) {
+            //         num_options = NUM_MENU_OPTIONS_BARANDAS;
+            //     } else if (current_menu_ptr == menu_options_freno) {
+            //         num_options = NUM_MENU_OPTIONS_FRENO;
+            //     } else if (current_menu_ptr == menu_options_idle) {
+            //         num_options = NUM_MENU_OPTIONS_IDLE;
+            //     } else {
+            //         num_options = NUM_MAIN_MENU_OPTIONS;
+            //     }
                 
-                ESP_LOGD(TAG_MENU, "Evento de boton recibido, procesando...");
+            //     ESP_LOGD(TAG_MENU, "Evento de boton recibido, procesando...");
                 
-                switch (received_event) {
-                    case EVENT_BUTTON_UP:
-                        current_selection = (current_selection - 1 + num_options) % num_options;
-                        break;
-                    case EVENT_BUTTON_DOWN:
-                        current_selection = (current_selection + 1) % num_options;
-                        break;
-                    case EVENT_BUTTON_SELECT:
-                        // Obtener el item seleccionado
-                        menu_item_t *selected_item = &current_menu_ptr[current_selection];
+            //     switch (received_event) {
+            //         case EVENT_BUTTON_UP:
+            //             current_selection = (current_selection - 1 + num_options) % num_options;
+            //             break;
+            //         case EVENT_BUTTON_DOWN:
+            //             current_selection = (current_selection + 1) % num_options;
+            //             break;
+            //         case EVENT_BUTTON_SELECT:
+            //             Obtener el item seleccionado
+            //             menu_item_t *selected_item = &current_menu_ptr[current_selection];
 
-                        // Comprobar si tiene un submenú
-                        if (selected_item->submenu) {
-                            // Navegar al submenú
-                            parent_menu_ptr = current_menu_ptr; // Guardar el menú actual como padre
-                            current_menu_ptr = selected_item->submenu;
-                            current_selection = 0; // Resetear la selección al entrar en un submenú
-                        }
-                        // Comprobar si es la opción "Atras"
-                        else if (strcmp(selected_item->text, "Atras") == 0) {
-                            if (parent_menu_ptr) {
-                                current_menu_ptr = parent_menu_ptr; // Volver al menú padre
-                                parent_menu_ptr = NULL; // El nuevo padre es el menú principal
-                                current_selection = 0; // Resetear la selección
-                            }
-                        }
-                        else if (strcmp(selected_item->text, "Pesar") == 0) {
-                            ESP_LOGI(TAG_MENU, "Entrando en modo de pesaje...");
-                            current_state = MENU_STATE_WEIGHING;
-                            refresh_lcd_display();
-                        }
-                        else if (strcmp(selected_item->text, "Altura") == 0) {
-                            ESP_LOGI(TAG_MENU, "Entrando en modo de altura...");
-                            current_state = MENU_STATE_HEIGHT;
-                            refresh_lcd_display();
-                        } 
-                        else if (selected_item->action) {
-                            selected_item->action();
-                        }
-                        break;
-                }
-                refresh_lcd_display();
-            }
+            //             Comprobar si tiene un submenú
+            //             if (selected_item->submenu) {
+            //                 Navegar al submenú
+            //                 parent_menu_ptr = current_menu_ptr; // Guardar el menú actual como padre
+            //                 current_menu_ptr = selected_item->submenu;
+            //                 current_selection = 0; // Resetear la selección al entrar en un submenú
+            //             }
+            //             Comprobar si es la opción "Atras"
+            //             else if (strcmp(selected_item->text, "Atras") == 0) {
+            //                 if (parent_menu_ptr) {
+            //                     current_menu_ptr = parent_menu_ptr; // Volver al menú padre
+            //                     parent_menu_ptr = NULL; // El nuevo padre es el menú principal
+            //                     current_selection = 0; // Resetear la selección
+            //                 }
+            //             }
+            //             else if (strcmp(selected_item->text, "Pesar") == 0) {
+            //                 ESP_LOGI(TAG_MENU, "Entrando en modo de pesaje...");
+            //                 current_state = MENU_STATE_WEIGHING;
+            //                 refresh_lcd_display();
+            //             }
+            //             else if (strcmp(selected_item->text, "Altura") == 0) {
+            //                 ESP_LOGI(TAG_MENU, "Entrando en modo de altura...");
+            //                 current_state = MENU_STATE_HEIGHT;
+            //                 refresh_lcd_display();
+            //             } 
+            //             else if (selected_item->action) {
+            //                 selected_item->action();
+            //             }
+            //             break;
+            //     }
+            //     refresh_lcd_display();
+            // }
         } else if (current_state == MENU_STATE_WEIGHING) {
             // Espera por un evento de la cola de botones o de la cola de peso.
             // No bloquea para siempre, si no hay nada en 100ms, refresca el display.
-            if (xQueueReceive(weight_queue, &received_weight, pdMS_TO_TICKS(100)) == pdPASS) {
-                current_weight_display = received_weight;
-                refresh_lcd_display();
-            }
+            // if (xQueueReceive(weight_queue, &received_weight, pdMS_TO_TICKS(100)) == pdPASS) {
+            //     current_weight_display = received_weight;
+            //     refresh_lcd_display();
+            // }
             
-            if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
-                ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
-                current_state = MENU_STATE_NAVIGATING;
-                refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
-            }
-        } else if (current_state == MENU_STATE_HEIGHT) {
-            if (xQueueReceive(height_queue, &received_height, pdMS_TO_TICKS(100)) == pdPASS) {
-                current_height_display = received_height;
-                refresh_lcd_display();
-            }
+        //     if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
+        //         ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
+        //         current_state = MENU_STATE_NAVIGATING;
+        //         refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
+        //     }
+        //  } else if (current_state == MENU_STATE_HEIGHT) {
+        //     if (xQueueReceive(height_queue, &received_height, pdMS_TO_TICKS(100)) == pdPASS) {
+        //         current_height_display = received_height;
+        //         refresh_lcd_display();
+            // }
             
-            if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
-                ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
-                current_state = MENU_STATE_NAVIGATING;
-                refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
-            }
+            // if (xQueueReceive(button_event_queue, &received_event, (TickType_t)0) == pdPASS && received_event == EVENT_BUTTON_SELECT) {
+            //     ESP_LOGI(TAG_MENU, "Saliendo de modo de pesaje...");
+            //     current_state = MENU_STATE_NAVIGATING;
+            //     refresh_lcd_display(); // Refrescar la pantalla para mostrar el menu
+            // }
         }
     }
 }
