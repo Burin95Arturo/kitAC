@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"        // Incluye el header de GPIO de ESP-IDF
+#include "driver/spi_master.h"
 #include "inc/pinout.h"
 #include "esp_log.h"
 
