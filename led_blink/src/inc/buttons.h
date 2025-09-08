@@ -8,15 +8,10 @@
 #include "inc/pinout.h"
 #include "esp_log.h"
 
-static const char *TAG_BUTTON = "BUTTONS";
-bool prev_up_state          = true;     // true = botón no presionado (pull-up)
-bool prev_down_state        = true;
-bool prev_select_state      = true;
-bool current_up_state       = true;
-bool current_down_state     = true;
-bool current_select_state   = true;
+// static const char *TAG_BUTTON = "BUTTONS";
+
     
 // Tags para logs
-static const char *TAG_BTN = "BUTTON_TASK";
+// static const char *TAG_BTN = "BUTTON_TASK";
 
 void button_task(void *pvParameters);

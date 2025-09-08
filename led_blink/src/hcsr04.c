@@ -47,7 +47,8 @@ void hc_sr04_task(void *pvParameters) {
             altura.altura = current_height_m;
         
             if (xQueueSend(central_queue, &altura, (TickType_t)0) != pdPASS) {
-                ESP_LOGE(TAG_3, "No se pudo enviar el peso a la cola.");
+                // ESP_LOGE(TAG_3, "No se pudo enviar el peso a la cola.");
+                printf("No se pudo enviar el peso a la cola.\n");
             }
         }
         vTaskDelay(pdMS_TO_TICKS(500));

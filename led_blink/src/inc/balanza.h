@@ -20,7 +20,7 @@ static bool hx711_wait_ready(TickType_t timeout_ticks);
 static long hx711_read_raw(void);
 
 // --- Tag para el logging del ESP-IDF ---
-static const char *TAG_2 = "HX711_DRIVER";
+// static const char *TAG_2 = "HX711_DRIVER";
 
 // --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.

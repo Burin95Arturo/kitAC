@@ -21,8 +21,8 @@ static void hx711_init(void) {
     gpio_set_direction(HX711_PD_SCK_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(HX711_PD_SCK_PIN, 0); // Poner PD_SCK en LOW al inicio (modo activo)
 
-    ESP_LOGI(TAG_2, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_DOUT_PIN, HX711_PD_SCK_PIN);
-    
+    // ESP_LOGI(TAG_2, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_DOUT_PIN, HX711_PD_SCK_PIN);
+    printf("HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.\n", HX711_DOUT_PIN, HX711_PD_SCK_PIN);  
     // El HX711 se enciende si PD_SCK está LOW. Si estaba en power-down, tomará un tiempo (aprox 50us) para estabilizarse.
     // Aunque hx711_wait_ready() se encargará de esperar.
 }
@@ -36,7 +36,8 @@ static bool hx711_wait_ready(TickType_t timeout_ticks) {
     TickType_t start_time = xTaskGetTickCount();
     while (gpio_get_level(HX711_DOUT_PIN) == 1) { // DOUT HIGH significa que no está listo
         if ((xTaskGetTickCount() - start_time) > timeout_ticks) {
-            ESP_LOGW(TAG_2, "HX711: Timeout esperando que DOUT se ponga en LOW.");
+            //ESP_LOGW(TAG_2, "HX711: Timeout esperando que DOUT se ponga en LOW.");
+            printf("HX711: Timeout esperando que DOUT se ponga en LOW.\n");
             return false; // Timeout
         }
         vTaskDelay(1); // Esperar un tick para ceder CPU y no bloquear completamente
@@ -103,7 +104,8 @@ void balanza_task(void *pvParameters){
     long contador_promedio = 0;
     float current_weight_kg = 0.0f;
     long promedio_raw = 0;
-    ESP_LOGI(TAG_2, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+//    ESP_LOGI(TAG_2, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    printf("Tarea de lectura y cálculo de peso del HX711 iniciada.\n");
     data_t peso_data;
     
     while (1) {
@@ -121,19 +123,22 @@ void balanza_task(void *pvParameters){
                     current_weight_kg = ((float)promedio_raw - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
                 } else {
                     current_weight_kg = 0.0f;
-                    ESP_LOGE(TAG_2, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+                    // ESP_LOGE(TAG_2, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+                    printf("ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.\n");
                 }
                 
                 // Enviar el peso calculado a la cola
                 peso_data.origen = SENSOR_BALANZA;
                 peso_data.peso = current_weight_kg;
                 if (xQueueSend(central_queue, &peso_data, (TickType_t)0) != pdPASS) {
-                    ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
+                    // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
+                    printf("No se pudo enviar el peso a la cola.\n");
                 }
                 
-                ESP_LOGI(TAG_2, "Raw Value: %ld", current_raw_value);
-
-                ESP_LOGI(TAG_2, "Peso promediado: %.3f Kg", current_weight_kg);
+                // ESP_LOGI(TAG_2, "Raw Value: %ld", current_raw_value);
+                printf("Raw Value: %ld\n", current_raw_value);
+                // ESP_LOGI(TAG_2, "Peso promediado: %.3f Kg", current_weight_kg);
+                printf("Peso promediado: %.3f Kg\n", current_weight_kg);
 
                 // Reiniciar el promedio
                 promedio_raw = 0;

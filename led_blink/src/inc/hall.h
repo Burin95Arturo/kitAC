@@ -10,4 +10,4 @@
 
 
 void hall_sensor_task(void *pvParameters);
-static bool getHallSensorState(void);
+// static bool getHallSensorState(void);

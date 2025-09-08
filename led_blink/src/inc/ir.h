@@ -8,6 +8,6 @@
 #include "inc/program.h"
 #include <freertos/queue.h>
 
-static bool getIrSensorState(void);
+// static bool getIrSensorState(void);
 
 void ir_sensor_task(void *pvParameters);

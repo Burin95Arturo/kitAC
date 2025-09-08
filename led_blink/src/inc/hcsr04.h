@@ -10,6 +10,6 @@
 #include <freertos/queue.h>
 
 // --- Tag para el logging del ESP-IDF ---
-static const char *TAG_3 = "HCSR04";
+// static const char *TAG_3 = "HCSR04";
 
 void hc_sr04_task(void *pvParameters);

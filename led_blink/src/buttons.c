@@ -2,7 +2,8 @@
 
 
 void button_task(void *pvParameters) {
-    ESP_LOGI(TAG_BUTTON, "Tarea de lectura de botones iniciada.");
+    // ESP_LOGI(TAG_BUTTON, "Tarea de lectura de botones iniciada.");
+    printf("Tarea de lectura de botones iniciada.\n");
     button_event_t event;
     bool button_pressed = false;
     data_t button_data;
@@ -31,8 +32,8 @@ void button_task(void *pvParameters) {
                 button_data.origen = BUTTON_EVENT;
                 button_data.button_event = event;
                 xQueueSend(central_queue, &button_data, pdMS_TO_TICKS(10));
-                ESP_LOGD(TAG_BTN, "Evento de boton enviado a la cola.");
-                
+                // ESP_LOGD(TAG_BTN, "Evento de boton enviado a la cola.");
+                printf("Evento de boton enviado a la cola.\n");
                 // Retardo para "debounce" del boton, no enviar multiples eventos
                 vTaskDelay(pdMS_TO_TICKS(250));
             }
