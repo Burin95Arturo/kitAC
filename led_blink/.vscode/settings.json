@@ -13,7 +13,10 @@
         "balanza_2.h": "c",
         "esp_timer.h": "c",
         "queue.h": "c",
-        "program.h": "c"
+        "program.h": "c",
+        "ili9340.h": "c",
+        "display_tft.h": "c",
+        "decode_image.h": "c"
     },
     "idf.pythonInstallPath": "c:\\ESP32\\tools\\idf-python\\3.11.2\\python.exe"
 }
