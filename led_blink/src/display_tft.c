@@ -15,8 +15,8 @@
 
 #include "esp_spiffs.h"
 
-static FontxFile fx[2];
-
+static FontxFile latin32fx[2];
+static FontxFile ilgh24fx[2];
 
 void init_spiffs(char * path) {
     esp_vfs_spiffs_conf_t conf = {
@@ -39,7 +39,13 @@ void init_spiffs(char * path) {
 void display_tft_task(void *pvParameters) {
 
     TFT_t dev;
-    InitFontx(fx, "/data/LATIN32B.FNT", "");
+    InitFontx(latin32fx, "/data/LATIN32B.FNT", "");
+    InitFontx(ilgh24fx, "/data/ILGH24XB.FNT", "");
+    //Recordar que cada vez que se cargue una fuente nueva, hay que grabarla en memoria: pio run -t uploadfs
+
+    uint16_t contador = 2;
+    char string_contador[5];
+
 
     uint16_t model = 0x9341; //ILI9341
     ESP_LOGI("TFT", "Disabling Touch Contoller");
@@ -51,7 +57,7 @@ void display_tft_task(void *pvParameters) {
 
     init_spiffs("/data");
 
-    spi_clock_speed(5*1000*1000); // 5 MHz
+    spi_clock_speed(8*1000*1000); // 8 MHz
 	spi_master_init(&dev, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_TFT_CS_GPIO, CONFIG_DC_GPIO, 
 		CONFIG_RESET_GPIO, CONFIG_BL_GPIO, XPT_MISO_GPIO, XPT_CS_GPIO, XPT_IRQ_GPIO, XPT_SCLK_GPIO, XPT_MOSI_GPIO);
 
@@ -60,15 +66,24 @@ void display_tft_task(void *pvParameters) {
     //lcdSetRotation(&dev, 1);
 
 
-    lcdFillScreen(&dev, RED);
-    lcdDrawString(&dev, fx, 20, 50, (uint8_t *)"Hola!", BLACK);
+    lcdFillScreen(&dev, WHITE);
+    lcdSetFontDirection(&dev, DEFAULT_ORIENTATION);
+
+    lcdDrawString(&dev, ilgh24fx, 40, 300, (uint8_t *)"Muestro variables:", GREEN);
+    
     
     while (1) {
 
-        vTaskDelay(pdMS_TO_TICKS(100));
-        lcdDrawString(&dev, fx, 20, 102, (uint8_t *)"Todo bien?", BLACK);
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        lcdFillScreen(&dev, PURPLE);
+        lcdDrawFillRect(&dev, 55, 240, 75, 300, WHITE);
+        sprintf(string_contador, "%d", contador);   
+        lcdDrawString(&dev, latin32fx, 80, 300, (uint8_t *)&string_contador, BLUE);    
+        vTaskDelay(pdMS_TO_TICKS(1000));  
+        contador*=2;  
+        if (contador > 900) {
+            contador = 1;
+            lcdFillScreen(&dev, WHITE);
+            lcdDrawString(&dev, ilgh24fx, 40, 300, (uint8_t *)"Muestro variables:", GREEN);
+        }
     }
 
 }

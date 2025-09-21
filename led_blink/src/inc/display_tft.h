@@ -20,3 +20,5 @@
 
 void init_spiffs(char * path);
 void display_tft_task(void *pvParameters);
+
+#define DEFAULT_ORIENTATION DIRECTION270 //Para verlo horizontal
