@@ -164,7 +164,7 @@ void user_init(void) {
     //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    xTaskCreate(&display_tft_task, "tft_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&display_tft_task, "tft_task", 8192, NULL, 1, NULL);
 }
 
 // void app_main(void)

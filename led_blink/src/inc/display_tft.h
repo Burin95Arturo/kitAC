@@ -18,5 +18,5 @@
 
 #define LCD_BK_LIGHT_ON_LEVEL   1
 
-
+void init_spiffs(char * path);
 void display_tft_task(void *pvParameters);
