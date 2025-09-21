@@ -16,14 +16,9 @@
 #define TAG "ILI9340"
 #define	_DEBUG_ 0
 
-#if CONFIG_SPI2_HOST
-#define TFT_ID SPI2_HOST
-#elif CONFIG_SPI3_HOST
-#define TFT_ID SPI3_HOST
-#else
-#define TFT_ID SPI2_HOST // When not to use menuconfig
-#define XPT_ID SPI3_HOST // When not to use menuconfig
-#endif
+
+#define TFT_ID SPI3_HOST // When not to use menuconfig
+
 
 #define SPI_DEFAULT_FREQUENCY SPI_MASTER_FREQ_10M; // 10MHz
 

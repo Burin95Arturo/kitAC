@@ -16,6 +16,11 @@
 #define CYAN   rgb565(  0, 156, 209) // 0x04FA
 #define PURPLE rgb565(128,   0, 128) // 0x8010
 
+#define CONFIG_WIDTH	240
+#define CONFIG_HEIGHT 	320
+#define CONFIG_OFFSETX	0
+#define CONFIG_OFFSETY  0
+
 typedef enum {DIRECTION0, DIRECTION90, DIRECTION180, DIRECTION270} DIRECTION;
 
 typedef struct {
