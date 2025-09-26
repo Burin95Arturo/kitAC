@@ -12,6 +12,7 @@
 #include "esp_log.h"
 
 #include "inc/ili9340.h"
+#include "inc/display_tft.h"
 
 #define TAG "ILI9340"
 #define	_DEBUG_ 0
@@ -43,6 +44,115 @@ static const int XPT_Frequency = 1*1000*1000;
 //#define XPT_CS	4
 //#define XPT_IRQ 5
 #endif
+
+/* Pre-transfer callback para setear DC según transaction->user */
+static void lcd_spi_pre_transfer_callback(spi_transaction_t *t)
+{
+    int dc = (int) t->user; // 0 = comando, 1 = data
+    gpio_set_level(CONFIG_DC_GPIO, dc);
+}
+// Enviar un comando (1 byte) al ILI9340 usando DMA
+esp_err_t lcdWriteCommandByteDMA(spi_device_handle_t spi, uint8_t cmd) {
+    spi_transaction_t t;
+
+	gpio_set_level(CONFIG_DC_GPIO, SPI_Command_Mode);
+    memset(&t, 0, sizeof(t));
+
+    t.length = 8;             // 8 bits
+    t.tx_buffer = &cmd;
+    t.user = (void*)0;        // opcional: podés usar flags en user
+
+    return spi_device_queue_trans(spi, &t, portMAX_DELAY);
+}
+
+// Enviar datos al ILI9340 usando DMA
+esp_err_t lcdWriteDataDMA(spi_device_handle_t spi, const uint8_t *data, int len) {
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));
+	gpio_set_level(CONFIG_DC_GPIO, SPI_Data_Mode);
+
+    t.length = len * 8;       // bits
+    t.tx_buffer = data;
+    t.user = (void*)1;        // opcional: flag "data"
+
+    return spi_device_queue_trans(spi, &t, portMAX_DELAY);
+}
+
+/* Función helper: set window (encola comandos+datos usando DMA) */
+esp_err_t ili9341_set_window_dma(spi_device_handle_t spi, int x0, int y0, int x1, int y1)
+{
+    esp_err_t ret;
+    uint8_t buf[4];
+
+    // CASET (0x2A) - column address set
+    ret = lcdWriteCommandByteDMA(spi, 0x2A);
+    if (ret != ESP_OK) return ret;
+    buf[0] = (x0 >> 8) & 0xFF; buf[1] = x0 & 0xFF;
+    buf[2] = (x1 >> 8) & 0xFF; buf[3] = x1 & 0xFF;
+    ret = lcdWriteDataDMA(spi, buf, 4);
+    if (ret != ESP_OK) return ret;
+
+    // PASET (0x2B) - page address set
+    ret = lcdWriteCommandByteDMA(spi, 0x2B);
+    if (ret != ESP_OK) return ret;
+    buf[0] = (y0 >> 8) & 0xFF; buf[1] = y0 & 0xFF;
+    buf[2] = (y1 >> 8) & 0xFF; buf[3] = y1 & 0xFF;
+    ret = lcdWriteDataDMA(spi, buf, 4);
+    if (ret != ESP_OK) return ret;
+
+    // RAMWR (0x2C)
+    ret = lcdWriteCommandByteDMA(spi, 0x2C);
+    return ret;
+}
+
+/* Encolar y esperar resultado inmediatamente (seguro, sencillo) */
+esp_err_t queue_trans_and_wait(spi_device_handle_t spi, spi_transaction_t *t)
+{
+    esp_err_t r = spi_device_queue_trans(spi, t, portMAX_DELAY);
+    if (r != ESP_OK) return r;
+    spi_transaction_t *rt;
+    return spi_device_get_trans_result(spi, &rt, portMAX_DELAY);
+}
+
+/*
+void ili9340_set_window_dma(spi_device_handle_t spi,
+                                   int x0, int y0, int x1, int y1) {
+    uint8_t data[4];
+
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));
+
+    // Column set (0x2A)
+    lcdWriteCommandByteDMA(spi, 0x2A);
+    data[0] = x0 >> 8; data[1] = x0 & 0xFF;
+    data[2] = x1 >> 8; data[3] = x1 & 0xFF;
+    lcdWriteDataDMA(spi, data, 4);
+
+    // Page set (0x2B)
+    lcdWriteCommandByteDMA(spi, 0x2B);
+    data[0] = y0 >> 8; data[1] = y0 & 0xFF;
+    data[2] = y1 >> 8; data[3] = y1 & 0xFF;
+    lcdWriteDataDMA(spi, data, 4);
+
+    // Memory write (0x2C)
+    lcdWriteCommandByteDMA(spi, 0x2C);
+}
+*/
+
+void lcdSetWindow(TFT_t * dev, int x0, int y0, int x1, int y1) {
+    // Column address set
+    spi_master_write_comm_byte(dev, 0x2A);
+    spi_master_write_data_word(dev, x0);
+    spi_master_write_data_word(dev, x1);
+
+    // Page address set
+    spi_master_write_comm_byte(dev, 0x2B);
+    spi_master_write_data_word(dev, y0);
+    spi_master_write_data_word(dev, y1);
+
+    // Memory write
+    spi_master_write_comm_byte(dev, 0x2C);
+}
 
 void spi_clock_speed(int speed) {
 	ESP_LOGI(TAG, "SPI clock speed=%d MHz", speed/1000000);
@@ -97,11 +207,12 @@ void spi_master_init(TFT_t * dev, int16_t TFT_MOSI, int16_t TFT_SCLK, int16_t TF
 		.mosi_io_num = TFT_MOSI,
 		.miso_io_num = -1,
 		.quadwp_io_num = -1,
-		.quadhd_io_num = -1
+		.quadhd_io_num = -1,
+		.max_transfer_sz = 4096
 	};
 #endif
 
-	ret = spi_bus_initialize( TFT_ID, &tft_buscfg, SPI_DMA_CH_AUTO );
+	ret = spi_bus_initialize( TFT_ID, &tft_buscfg, SPI_DMA_CH1 );
 	ESP_LOGI(TAG, "spi_bus_initialize(TFT) ret=%d TFT_ID=%d",ret, TFT_ID);
 	assert(ret==ESP_OK);
 
@@ -110,6 +221,7 @@ void spi_master_init(TFT_t * dev, int16_t TFT_MOSI, int16_t TFT_SCLK, int16_t TF
 		.clock_speed_hz = clock_speed_hz,
 		.spics_io_num = TFT_CS,
 		.queue_size = 7,
+		//.pre_cb = lcd_spi_pre_transfer_callback,
 		.flags = SPI_DEVICE_NO_DUMMY,
 	};
 

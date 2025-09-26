@@ -18,7 +18,16 @@
 
 #define LCD_BK_LIGHT_ON_LEVEL   1
 
+//IMPORTANTE: Se está usando Frame Buffer. Ver ili9340.h
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void init_spiffs(char * path);
 void display_tft_task(void *pvParameters);
 
 #define DEFAULT_ORIENTATION DIRECTION270 //Para verlo horizontal
+
+
+//Colores para las pantallas
+#define FONDO_BIENVENIDA    rgb565(255,   245,   235) // #fffbe8
+#define AZUL_OCEANO     rgb565(1,   2,   15) // #090978
+#define VERDE_OSCURO     rgb565(0,   50,   15) // #00ca3a

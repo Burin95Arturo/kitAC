@@ -21,6 +21,8 @@
 #define CONFIG_OFFSETX	0
 #define CONFIG_OFFSETY  0
 
+//#define CONFIG_FRAME_BUFFER 1 //Deshabilitarlo (quitar define) si hay problemas de RAM. Frame Buffer permite optimizar el rendimiento en texto.
+
 
 typedef enum {DIRECTION0, DIRECTION90, DIRECTION180, DIRECTION270} DIRECTION;
 
@@ -57,6 +59,14 @@ typedef struct {
 	int16_t _max_xc; // Maximum x coordinate
 	int16_t _max_yc; // Maximum y coordinate
 } TFT_t;
+
+//Custom functions:
+esp_err_t lcdWriteCommandByteDMA(spi_device_handle_t spi, uint8_t cmd);
+esp_err_t lcdWriteDataDMA(spi_device_handle_t spi, const uint8_t *data, int len);
+esp_err_t ili9341_set_window_dma(spi_device_handle_t spi, int x0, int y0, int x1, int y1);
+esp_err_t queue_trans_and_wait(spi_device_handle_t spi, spi_transaction_t *t);
+
+void lcdSetWindow(TFT_t * dev, int x0, int y0, int x1, int y1);
 
 void spi_clock_speed(int speed);
 void spi_master_init(TFT_t * dev, int16_t TFT_MOSI, int16_t TFT_SCLK, int16_t TFT_CS, int16_t GPIO_DC, int16_t GPIO_RESET, int16_t GPIO_BL,

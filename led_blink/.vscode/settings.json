@@ -17,7 +17,11 @@
         "ili9340.h": "c",
         "display_tft.h": "c",
         "decode_image.h": "c",
-        "esp_rom_caps.h": "c"
+        "esp_rom_caps.h": "c",
+        "ets_sys.h": "c",
+        "task.h": "c",
+        "compare": "c",
+        "cstdint": "c"
     },
     "idf.pythonInstallPath": "c:\\ESP32\\tools\\idf-python\\3.11.2\\python.exe"
 }
