@@ -18,6 +18,9 @@
 #define BMP_HEADER_SIZE 54
 #define OFFSET_DATOS_BMP 70  // Cambiar a 54 si no usaste mi script para convertir JPG a BMP
 
+// Corrección de offset X para ILI9340
+#define LCD_X_OFFSET 0
+
 static FontxFile latin32fx[2];
 static FontxFile ilgh24fx[2];
 static FontxFile Cons32fx[2];
@@ -39,6 +42,109 @@ void init_spiffs(char * path) {
     ESP_LOGI("SPIFFS", "SPIFFS montado correctamente");
 }
 
+void lcdDrawBMP(TFT_t *dev, const char *filename, int x, int y)
+{
+    FILE *f = fopen(filename, "rb");
+    if (!f) {
+        ESP_LOGE("BMP Draw", "No se pudo abrir %s", filename);
+        return;
+    }
+
+    uint8_t header[54];
+    fread(header, 1, sizeof(header), f);
+
+    if (header[0] != 'B' || header[1] != 'M') {
+        ESP_LOGE("BMP Draw", "Archivo no válido BMP");
+        fclose(f);
+        return;
+    }
+
+    uint32_t data_offset = header[10] | (header[11] << 8) | (header[12] << 16) | (header[13] << 24);
+    uint32_t width  = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
+    uint32_t height = header[22] | (header[23] << 8) | (header[24] << 16) | (header[25] << 24);
+    uint16_t bpp    = header[28] | (header[29] << 8);
+
+    if (bpp != 16) {
+        ESP_LOGE("BMP Draw", "Solo BMP de 16 bits");
+        fclose(f);
+        return;
+    }
+
+    int rowSize = (width * 2 + 3) & ~3;
+    fseek(f, data_offset, SEEK_SET);
+
+    // Cambiar la asignación de memoria para asegurar que el buffer sea un múltiplo de 4 bytes
+    // El tamaño en bytes es width * 2. Aseguramos que sea el siguiente múltiplo de 4.
+    size_t buffer_size_bytes = (width * 2 + 3) & ~3; // Siguiente múltiplo de 4
+
+    uint16_t *line = heap_caps_aligned_alloc(4, buffer_size_bytes, MALLOC_CAP_DMA);
+    /*
+    // Alinear puntero a múltiplo de 4 bytes
+    uintptr_t ptr = (uintptr_t)line;
+    ptr = (ptr + 3) & ~3;
+    line = (uint16_t *)ptr;
+    */
+
+    uint8_t  *row_buf = malloc(rowSize);
+    if (!line || !row_buf) {
+        ESP_LOGE("BMP Draw", "No hay memoria");
+        if (line) free(line);
+        if (row_buf) free(row_buf);
+        fclose(f);
+        return;
+    }
+
+    uint16_t x0 = x + dev->_offsetx + LCD_X_OFFSET;
+    if (x0 < 0) x0 = 0;
+    uint16_t y0 = y + dev->_offsety;
+    uint16_t x1 = x0 + width  - 1;
+    uint16_t y1 = y0 + height - 1;
+
+    if (x1 >= dev->_width)  x1 = dev->_width  - 1;
+    if (y1 >= dev->_height) y1 = dev->_height - 1;
+
+    ESP_LOGI("BMP", "offset: %d", dev->_offsetx);
+    ESP_LOGI("BMP", "Ventana: x=%d..%d y=%d..%d", x0, x1, y0, y1);
+
+    // Configurar ventana una sola vez
+    spi_master_write_comm_byte(dev, 0x2A); // Columna
+    spi_master_write_addr(dev, x0, x1);
+    spi_master_write_comm_byte(dev, 0x2B); // Fila
+    spi_master_write_addr(dev, y0, y1);
+    spi_master_write_comm_byte(dev, 0x2C); // Memory Write
+
+    // Enviar cada fila (de abajo hacia arriba)
+    for (int row = 0; row < height; row++) {
+        fseek(f, data_offset + (height - 1 - row) * rowSize, SEEK_SET);
+        fread(row_buf, 1, rowSize, f);
+        memcpy(line, row_buf, width * 2);
+
+        // 🔄 Byte-swap - Convertir de little endian (BMP) a big endian (LCD)
+        for (int i = 0; i < width; i++) {
+            uint16_t c = line[i];
+            line[i] = (c << 8) | (c >> 8);
+        }
+
+        /*
+
+        // ⚙️ Alinear a múltiplo de 4 bytes
+        size_t tx_len = (width * 2 + 3) & ~3;
+
+        spi_transaction_t t = {0};
+        t.length = tx_len * 8;  // en bits
+        t.tx_buffer = line;
+        gpio_set_level(dev->_dc, 1);*/
+
+        // 🧩 Importante: usar transmit bloqueante para estabilidad
+        //spi_device_transmit(dev->_TFT_Handle, &t);
+        spi_master_write_colors_fast(dev, line, width);
+    }
+
+    free(line);
+    free(row_buf);
+    fclose(f);
+    ESP_LOGI("BMP", "Imagen renderizada correctamente");
+}
 
 
 void display_tft_task(void *pvParameters) {
@@ -66,7 +172,7 @@ void display_tft_task(void *pvParameters) {
 
     init_spiffs("/data");
 
-    spi_clock_speed(10*1000*1000); // 10 MHz
+    spi_clock_speed(1*1000*1000); // 1 MHz
 	spi_master_init(&dev, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_TFT_CS_GPIO, CONFIG_DC_GPIO, 
 		CONFIG_RESET_GPIO, CONFIG_BL_GPIO, XPT_MISO_GPIO, XPT_CS_GPIO, XPT_IRQ_GPIO, XPT_SCLK_GPIO, XPT_MOSI_GPIO);
 
@@ -75,7 +181,7 @@ void display_tft_task(void *pvParameters) {
     //VER
     //lcdSetRotation(&dev, 1);
 
-    //A ver, que tengas eso del ojo entiendo que te haga sentir feo. Pero Randy, sos muy lindo de verdad. Ese video que me mandaste desde Roma, estabas divino
+    //. 
 
     lcdFillScreen(&dev, WHITE);
     lcdSetFontDirection(&dev, DEFAULT_ORIENTATION);
@@ -89,120 +195,28 @@ void display_tft_task(void *pvParameters) {
         ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony.bmp");
     }
 
-    FILE *f = fopen("/data/tony.bmp", "rb");
+    lcdDrawBMP(&dev, "/data/linea.bmp", 0, 0);
 
-    if (!f) {
-        ESP_LOGE("BMP", "No se pudo abrir");
-        return;
-    }
+    vTaskDelay(pdMS_TO_TICKS(20*10*100));  
 
-        // Leer encabezado de 54 bytes mínimo
-    uint8_t header[70];
-    size_t bytes_read = fread(header, 1, sizeof(header), f);
-    if (bytes_read < 54) {
-        ESP_LOGE("BMP", "Archivo demasiado corto para BMP");
-        fclose(f);
-        return;
-    }
-
-    // Verificar firma "BM"
-    if (header[0] != 'B' || header[1] != 'M') {
-        ESP_LOGE("BMP", "No es un archivo BMP válido");
-        fclose(f);
-        return;
-    }
-
-    // Extraer info del header
-    uint32_t data_offset = header[10] | (header[11] << 8) | (header[12] << 16) | (header[13] << 24);
-    uint32_t width  = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
-    uint32_t height = header[22] | (header[23] << 8) | (header[24] << 16) | (header[25] << 24);
-    uint16_t bpp    = header[28] | (header[29] << 8);
-
-    ESP_LOGI("BMP", "Archivo BMP");
-    ESP_LOGI("BMP", "Offset datos = %d bytes", (int)data_offset);
-    ESP_LOGI("BMP", "Resolución = %dx%d, %d bits/pixel", (int)width, (int)height, (int)bpp);
-
-    if (bpp != 16) {
-        ESP_LOGE("BMP", "Solo se admiten BMP de 16 bits (RGB565)");
-        fclose(f);
-        return;
-    }
-
-    // Tamaño real de fila (alineado a múltiplos de 4 bytes)
-    int rowSize = (width * 2 + 3) & ~3;
-
-    // Ir al comienzo de los datos de píxeles
-    fseek(f, data_offset, SEEK_SET);
-
-    // Buffer temporal DMA-capable para una fila
-    uint16_t *line = heap_caps_malloc(width * sizeof(uint16_t), MALLOC_CAP_DMA);
-    if (!line) {
-        ESP_LOGE("BMP", "No hay memoria para línea (%d bytes)", (int)(width * 2));
-        fclose(f);
-        return;
-    }
-
-    // Buffer para leer fila (incluido padding)
-    uint8_t *row_buf = malloc(rowSize);
-    if (!row_buf) {
-        ESP_LOGE("BMP", "No hay memoria para buffer de fila");
-        free(line);
-        fclose(f);
-        return;
-    }
-
-    // Configurar ventana de dibujo una sola vez
-    uint16_t x0 = 0 + dev._offsetx;
-    uint16_t y0 = 0 + dev._offsety;
-    uint16_t x1 = x0 + width - 1;
-    uint16_t y1 = y0 + height - 1;
-
-    spi_master_write_comm_byte(&dev, 0x2A); // Columna
-    spi_master_write_addr(&dev, x0, x1);
-    spi_master_write_comm_byte(&dev, 0x2B); // Fila
-    spi_master_write_addr(&dev, y0, y1);
-    spi_master_write_comm_byte(&dev, 0x2C); // Comando Memory Write
-
-
-    // Enviar cada fila en flujo continuo (de abajo hacia arriba)
-    for (int row = height - 1; row >= 0; row--) {
-        size_t r = fread(row_buf, 1, rowSize, f);
-        //ESP_LOGI("BMP", "Fila %d: leídos %d bytes", (int)row, (int)r);
-        if (r < rowSize) {
-            ESP_LOGW("BMP", "Fila %d incompleta (%d/%d bytes)", (int)row, (int)r, (int)rowSize);
-            break;
-        }
-
-        // Copiar solo los datos válidos (sin padding)
-        memcpy(line, row_buf, width * 2);
-        
-        // 🔄 Convertir de little endian (BMP) a big endian (LCD)
-        for (int i = 0; i < width; i++) {
-            uint16_t c = line[i];
-            line[i] = (c << 8) | (c >> 8);
-        }
-
-        // Enviar fila
-        spi_master_write_colors_fast(&dev, line, width);
-    }
-
-    free(row_buf);
-    free(line);
-    fclose(f);
-
-    ESP_LOGI("BMP", "Dibujo finalizado");
-    vTaskDelay(pdMS_TO_TICKS(10*10*100));  
+    lcdDrawFillRect(&dev, 0, 0, 238, 319, RED);
+    vTaskDelay(pdMS_TO_TICKS(5*10*100));  
 
 
     // Dibujar un rectángulo rojo 100x100 manualmente
-    uint16_t lin[100];
-    for (int i = 0; i < 100; i++) lin[i] = RED;
+    uint16_t lines[100];
+
+    // Rellenar línea roja (byte-swapped)
+    for (int i = 0; i < 100; i++) {
+        uint16_t c = YELLOW;
+        lines[i] = (c << 8) | (c >> 8);   // 🔄 swap bytes
+    }
 
     lcdSetWindow(&dev, 0, 0, 99, 99);
     spi_master_write_comm_byte(&dev, 0x2C);
 
     for (int y = 0; y < 100; y++) {
-        spi_master_write_colors_fast(&dev, lin, 100);
+        spi_master_write_colors_fast(&dev, lines, 100);
     }
 
     vTaskDelay(pdMS_TO_TICKS(5*10*100));  
@@ -267,3 +281,5 @@ void display_tft_task(void *pvParameters) {
     }
 
 }
+
+

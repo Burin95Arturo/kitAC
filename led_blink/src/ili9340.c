@@ -385,12 +385,32 @@ bool spi_master_write_colors(TFT_t * dev, uint16_t * colors, uint16_t size)
 //Custom
 void spi_master_write_colors_fast(TFT_t *dev, uint16_t *colors, uint32_t size)
 {
+    // size es el número de píxeles
+    // size * 16 es la longitud en bits
+
+    uint32_t len_bits = size * 16;
+    
+    // 💡 Alinear la longitud de la transferencia al siguiente múltiplo de 32 bits (4 bytes).
+    // Esto es una práctica recomendada para DMA en ESP-IDF para evitar problemas de bus/caché.
+    uint32_t len_bits_aligned = (len_bits + 31) & ~31;
+    
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
-    t.length = size * 16;        // bits
+    
+    // Asignar la longitud ALINEADA
+    t.length = len_bits_aligned; 
+    
+    // Pero solo decir al driver cuántos bytes de datos válidos hay,
+    // para que sepa qué hacer con el resto (típicamente rellenar con 0).
+    // Si la imagen de 220px usa 440 bytes, la longitud real de bytes a enviar es 440.
     t.tx_buffer = colors;
+
+    // Asegúrate de que el buffer no se envíe a través del campo 'tx_data' (máx 4 bytes), 
+    // lo cual deshabilitaría DMA, si lo haces.
+    // Esto ya lo tienes cubierto, ya que usas tx_buffer y DMA (asumiendo que size > 4).
+
     gpio_set_level(dev->_dc, 1); // DC=1 (data)
-    spi_device_transmit(dev->_TFT_Handle, &t);  // bloqueante
+    spi_device_transmit(dev->_TFT_Handle, &t); // bloqueante
 }
 
 
