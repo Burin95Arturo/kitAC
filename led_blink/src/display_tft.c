@@ -12,84 +12,16 @@
 #include "esp_rom_caps.h"
 #include "inc/pinout.h"
 #include "esp_log.h"
-#include "inc/tjpgd.h"
-
 #include "esp_spiffs.h"
+#include <sys/stat.h>
+
+#define BMP_HEADER_SIZE 54
+#define OFFSET_DATOS_BMP 70  // Cambiar a 54 si no usaste mi script para convertir JPG a BMP
 
 static FontxFile latin32fx[2];
 static FontxFile ilgh24fx[2];
 static FontxFile Cons32fx[2];
 
-// Callback para leer bytes desde archivo
-static size_t input_func(JDEC *jd, uint8_t *buff, size_t nbyte) {
-    FILE *fp = (FILE *)jd->device;
-    if (buff) {
-        return fread(buff, 1, nbyte, fp);
-    } else {
-        fseek(fp, nbyte, SEEK_CUR);
-        return nbyte;
-    }
-}
-
-// Callback para dibujar los bloques decodificados. Usa DMA (encola comando/ventana + encola datos y espera) */
-static int output_func(JDEC *jd, void *bitmap, JRECT *rect) {
-
-    // bitmap es un buffer con pixels en RGB565 (uint16_t) provisto por TJpgDec
-    TFT_t *dev = (TFT_t *)jd->device;
-    TFT_t *dummy = NULL; // no usamos la abstracción del driver; usamos spi_dev
-    (void) dummy;
-
-    int x0 = rect->left;
-    int y0 = rect->top;
-    int x1 = rect->right;
-    int y1 = rect->bottom;
-
-    int w = x1 - x0 + 1;
-    int h = y1 - y0 + 1;
-
-    // 1) set window (encola comandos y datos de ventana)
-    if (ili9341_set_window_dma(dev->_TFT_Handle, x0, y0, x1, y1) != ESP_OK) {
-        ESP_LOGE("output_func", "set_window DMA failed");
-        return 0;
-    }
-    ESP_LOGI("output", "Seteo ventana");
-
-
-    // 2) enviar los pixels decodificados como una transacción DMA
-    spi_transaction_t t;
-    memset(&t, 0, sizeof(t));
-    t.length = w * h * 16;     // bits (RGB565 = 16 bits)
-    t.tx_buffer = bitmap;
-    t.user = (void*)1;         // data
-
-    // Encolar y esperar (para simplicidad y orden)
-    esp_err_t r = queue_trans_and_wait(dev->_TFT_Handle, &t);
-    if (r != ESP_OK) {
-        ESP_LOGE("output_func", "queue data trans failed: %d", r);
-        return 0;
-    }
-
-    // Además necesitamos esperar a que terminen las transacciones de los comandos previos:
-    // Los comandos y datos fueron encolados; como hacemos get_trans_result de la transacción de datos,
-    // las previas ya se ejecutaron (SPI ejecuta en orden).
-    return 1;
-    
-/*ORIGINAL*/    
-/*
-    TFT_t *dev = (TFT_t *)jd->device;
-    uint16_t *pixels = (uint16_t *)bitmap;
-    int w = rect->right - rect->left + 1;
-    int h = rect->bottom - rect->top + 1;
-
-    // Dibuja cada píxel en el LCD
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            uint16_t color = pixels[y * w + x];
-            lcdDrawPixel(dev, rect->left + x, rect->top + y, color);
-        }
-    }
-    return 1;*/
-}
 
 void init_spiffs(char * path) {
     esp_vfs_spiffs_conf_t conf = {
@@ -134,61 +66,148 @@ void display_tft_task(void *pvParameters) {
 
     init_spiffs("/data");
 
-    spi_clock_speed(8*1000*1000); // 8 MHz
+    spi_clock_speed(10*1000*1000); // 10 MHz
 	spi_master_init(&dev, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_TFT_CS_GPIO, CONFIG_DC_GPIO, 
 		CONFIG_RESET_GPIO, CONFIG_BL_GPIO, XPT_MISO_GPIO, XPT_CS_GPIO, XPT_IRQ_GPIO, XPT_SCLK_GPIO, XPT_MOSI_GPIO);
 
     lcdInit(&dev, model, CONFIG_WIDTH, CONFIG_HEIGHT, CONFIG_OFFSETX, CONFIG_OFFSETY);
+
     //VER
     //lcdSetRotation(&dev, 1);
 
+    //A ver, que tengas eso del ojo entiendo que te haga sentir feo. Pero Randy, sos muy lindo de verdad. Ese video que me mandaste desde Roma, estabas divino
 
     lcdFillScreen(&dev, WHITE);
     lcdSetFontDirection(&dev, DEFAULT_ORIENTATION);
     
     // Abrir JPG desde SPIFFS
-    FILE *fp = fopen("/data/logo.jpg", "rb");
 
-    
-    if (fp) 
-    {
-        // 6) Preparar TJpgDec con work en memoria DMA-capable
-        JDEC jd;
-        void *work = heap_caps_malloc(4096, MALLOC_CAP_DMA);  // work = buffer de trabajo via DMA
-        
-        if (work) {
-                        
-            JRESULT res = jd_prepare(&jd, input_func, work, 4096, (void *)fp);
+    struct stat st;
+    if (stat("/data/tony.bmp", &st) == 0) {
+        ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony.bmp", st.st_size);
+    } else {
+        ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony.bmp");
+    }
 
-            if (res == JDR_OK) {
-              
-                // 7) Decodificar (output_func_dma usa cola DMA y get_trans_result)
-                // Importante: en el callback se usará la variable global dev
-                jd.device = &dev;
-                // Decodificar → llama a output_func() para cada bloque
-                res = jd_decomp(&jd, output_func, 0);  // 0 = tamaño original
+    FILE *f = fopen("/data/tony.bmp", "rb");
 
-                if (res == JDR_OK) {
-                    ESP_LOGI("TFT", "JPEG decodificado OK");
-                } else {
-                    ESP_LOGE("TFT", "jd_decomp error %d", res);
-                }
+    if (!f) {
+        ESP_LOGE("BMP", "No se pudo abrir");
+        return;
+    }
 
-            } else {
-                ESP_LOGE("TFT", "jd_prepare error %d", res);
-            }
-            fclose(fp);
-            free(work);
-           
-        } else {
-            ESP_LOGE("TFT", "No hay RAM para buffer");
-            fclose(fp);
+        // Leer encabezado de 54 bytes mínimo
+    uint8_t header[70];
+    size_t bytes_read = fread(header, 1, sizeof(header), f);
+    if (bytes_read < 54) {
+        ESP_LOGE("BMP", "Archivo demasiado corto para BMP");
+        fclose(f);
+        return;
+    }
+
+    // Verificar firma "BM"
+    if (header[0] != 'B' || header[1] != 'M') {
+        ESP_LOGE("BMP", "No es un archivo BMP válido");
+        fclose(f);
+        return;
+    }
+
+    // Extraer info del header
+    uint32_t data_offset = header[10] | (header[11] << 8) | (header[12] << 16) | (header[13] << 24);
+    uint32_t width  = header[18] | (header[19] << 8) | (header[20] << 16) | (header[21] << 24);
+    uint32_t height = header[22] | (header[23] << 8) | (header[24] << 16) | (header[25] << 24);
+    uint16_t bpp    = header[28] | (header[29] << 8);
+
+    ESP_LOGI("BMP", "Archivo BMP");
+    ESP_LOGI("BMP", "Offset datos = %d bytes", (int)data_offset);
+    ESP_LOGI("BMP", "Resolución = %dx%d, %d bits/pixel", (int)width, (int)height, (int)bpp);
+
+    if (bpp != 16) {
+        ESP_LOGE("BMP", "Solo se admiten BMP de 16 bits (RGB565)");
+        fclose(f);
+        return;
+    }
+
+    // Tamaño real de fila (alineado a múltiplos de 4 bytes)
+    int rowSize = (width * 2 + 3) & ~3;
+
+    // Ir al comienzo de los datos de píxeles
+    fseek(f, data_offset, SEEK_SET);
+
+    // Buffer temporal DMA-capable para una fila
+    uint16_t *line = heap_caps_malloc(width * sizeof(uint16_t), MALLOC_CAP_DMA);
+    if (!line) {
+        ESP_LOGE("BMP", "No hay memoria para línea (%d bytes)", (int)(width * 2));
+        fclose(f);
+        return;
+    }
+
+    // Buffer para leer fila (incluido padding)
+    uint8_t *row_buf = malloc(rowSize);
+    if (!row_buf) {
+        ESP_LOGE("BMP", "No hay memoria para buffer de fila");
+        free(line);
+        fclose(f);
+        return;
+    }
+
+    // Configurar ventana de dibujo una sola vez
+    uint16_t x0 = 0 + dev._offsetx;
+    uint16_t y0 = 0 + dev._offsety;
+    uint16_t x1 = x0 + width - 1;
+    uint16_t y1 = y0 + height - 1;
+
+    spi_master_write_comm_byte(&dev, 0x2A); // Columna
+    spi_master_write_addr(&dev, x0, x1);
+    spi_master_write_comm_byte(&dev, 0x2B); // Fila
+    spi_master_write_addr(&dev, y0, y1);
+    spi_master_write_comm_byte(&dev, 0x2C); // Comando Memory Write
+
+
+    // Enviar cada fila en flujo continuo (de abajo hacia arriba)
+    for (int row = height - 1; row >= 0; row--) {
+        size_t r = fread(row_buf, 1, rowSize, f);
+        //ESP_LOGI("BMP", "Fila %d: leídos %d bytes", (int)row, (int)r);
+        if (r < rowSize) {
+            ESP_LOGW("BMP", "Fila %d incompleta (%d/%d bytes)", (int)row, (int)r, (int)rowSize);
+            break;
         }
 
-    } else {
-        ESP_LOGE("TFT", "No se pudo abrir HOLA.jpg");
+        // Copiar solo los datos válidos (sin padding)
+        memcpy(line, row_buf, width * 2);
+        
+        // 🔄 Convertir de little endian (BMP) a big endian (LCD)
+        for (int i = 0; i < width; i++) {
+            uint16_t c = line[i];
+            line[i] = (c << 8) | (c >> 8);
+        }
+
+        // Enviar fila
+        spi_master_write_colors_fast(&dev, line, width);
     }
-    
+
+    free(row_buf);
+    free(line);
+    fclose(f);
+
+    ESP_LOGI("BMP", "Dibujo finalizado");
+    vTaskDelay(pdMS_TO_TICKS(10*10*100));  
+
+
+    // Dibujar un rectángulo rojo 100x100 manualmente
+    uint16_t lin[100];
+    for (int i = 0; i < 100; i++) lin[i] = RED;
+
+    lcdSetWindow(&dev, 0, 0, 99, 99);
+    spi_master_write_comm_byte(&dev, 0x2C);
+
+    for (int y = 0; y < 100; y++) {
+        spi_master_write_colors_fast(&dev, lin, 100);
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(5*10*100));  
+
+
     lcdFillScreen(&dev, FONDO_BIENVENIDA);
     lcdDrawString(&dev, Cons32fx, 60, 240, (uint8_t *)"BIENVENIDO", BLACK);
     lcdDrawString(&dev, Cons32fx, 160, 220, (uint8_t *)"Kit AC", AZUL_OCEANO);
@@ -218,7 +237,7 @@ void display_tft_task(void *pvParameters) {
 
     //Pantalla Peso del paciente
     lcdDrawString(&dev, ilgh24fx, 35, 260, (uint8_t *)"Peso del paciente", BLACK);
-    lcdDrawString(&dev, Cons32fx, 102, 216, (uint8_t *)"85,7 kg", BLUE);
+    lcdDrawString(&dev, Cons32fx, 102, 216, (uint8_t *)"85,7 kg", RED);
     lcdDrawLine(&dev, 107,104,107, 216, BLUE);
     lcdDrawLine(&dev, 108,104,108, 216, BLUE);
 

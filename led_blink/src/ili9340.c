@@ -382,6 +382,17 @@ bool spi_master_write_colors(TFT_t * dev, uint16_t * colors, uint16_t size)
 	return spi_master_write_byte( dev->_TFT_Handle, Byte, size*2);
 }
 
+//Custom
+void spi_master_write_colors_fast(TFT_t *dev, uint16_t *colors, uint32_t size)
+{
+    spi_transaction_t t;
+    memset(&t, 0, sizeof(t));
+    t.length = size * 16;        // bits
+    t.tx_buffer = colors;
+    gpio_set_level(dev->_dc, 1); // DC=1 (data)
+    spi_device_transmit(dev->_TFT_Handle, &t);  // bloqueante
+}
+
 
 void delayMS(int ms) {
 	int _ms = ms + (portTICK_PERIOD_MS - 1);

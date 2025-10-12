@@ -65,6 +65,7 @@ esp_err_t lcdWriteCommandByteDMA(spi_device_handle_t spi, uint8_t cmd);
 esp_err_t lcdWriteDataDMA(spi_device_handle_t spi, const uint8_t *data, int len);
 esp_err_t ili9341_set_window_dma(spi_device_handle_t spi, int x0, int y0, int x1, int y1);
 esp_err_t queue_trans_and_wait(spi_device_handle_t spi, spi_transaction_t *t);
+void spi_master_write_colors_fast(TFT_t *dev, uint16_t *colors, uint32_t size);
 
 void lcdSetWindow(TFT_t * dev, int x0, int y0, int x1, int y1);
 
