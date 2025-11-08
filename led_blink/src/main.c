@@ -33,10 +33,10 @@ void task_blink(void *pvParameters) {
     while(true) {
         gpio_set_level(LED_PIN, 1);
         ESP_LOGI(TAG, "LED ON");
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
         gpio_set_level(LED_PIN, 0);
         ESP_LOGI(TAG, "LED OFF");
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -52,19 +52,23 @@ void user_init(void) {
 
     io_conf.pin_bit_mask = (1ULL << LED_PIN);
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (LED) configurado como salida.", LED_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (LED) configurado como salida.", LED_PIN);
+
+    io_conf.pin_bit_mask = (1ULL << LED_HALL_1);
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (LED HALL 1) configurado como salida.", LED_HALL_1);
 
     io_conf.pin_bit_mask = (1ULL << TRIG_PIN);
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (TRIG) configurado como salida.", TRIG_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (TRIG) configurado como salida.", TRIG_PIN);
 
     io_conf.pin_bit_mask = (1ULL << HX711_PD_SCK_PIN);
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (HX711_PD_SCK) configurado como salida.", HX711_PD_SCK_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (HX711_PD_SCK) configurado como salida.", HX711_PD_SCK_PIN);
 
     io_conf.pin_bit_mask = (1ULL << HX711_2_PD_SCK_PIN);
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (HX711_2_PD_SCK) configurado como salida.", HX711_2_PD_SCK_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (HX711_2_PD_SCK) configurado como salida.", HX711_2_PD_SCK_PIN);
 
     // --- Configuración de Pines de ENTRADA ---
     // (ECHO, HALL, IR, HX711_DOUT)
@@ -76,55 +80,61 @@ void user_init(void) {
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (ECHO) configurado como entrada.", ECHO_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (ECHO) configurado como entrada.", ECHO_PIN);
 
     // HALL_PIN (Si es Open-Collector y necesita Pull-Up para estado HIGH)
     io_conf.pin_bit_mask = (1ULL << HALL_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE; // <-- ¡MUY IMPORTANTE! Si tu sensor es open-collector y requiere pull-up.
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (HALL) configurado como entrada (PULL-UP habilitado).", HALL_PIN);
-
+    ESP_LOGI(TAG_GPIO, "GPIO %d (HALL) configurado como entrada (PULL-UP habilitado).", HALL_PIN);
 
     // // IR_PIN (Si es Open-Collector y necesita Pull-Up para estado HIGH)
     io_conf.pin_bit_mask = (1ULL << IR_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE; // <-- ¡MUY IMPORTANTE! Si tu sensor es open-collector y requiere pull-up.
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (IR) configurado como entrada (PULL-UP habilitado).", IR_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (IR) configurado como entrada (PULL-UP habilitado).", IR_PIN);
 
     // HX711_DOUT_PIN (¡CRÍTICO! Es salida push-pull del HX711, NUNCA habilitar pull-up/down)
     io_conf.pin_bit_mask = (1ULL << HX711_DOUT_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // ¡DESHABILITADO!
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // ¡DESHABILITADO!
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (HX711_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_DOUT_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (HX711_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_DOUT_PIN);
     
     io_conf.pin_bit_mask = (1ULL << BUTTON_UP_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_UP_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_UP_PIN);
 
     io_conf.pin_bit_mask = (1ULL << BUTTON_DOWN_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_DOWN_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_DOWN_PIN);
 
     io_conf.pin_bit_mask = (1ULL << BUTTON_SELECT_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_SELECT_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_SELECT_PIN);
+
+    io_conf.pin_bit_mask = (1ULL << BUTTON_BACK_PIN);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (BUTTON_BACK_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_BACK_PIN);
 
     io_conf.pin_bit_mask = (1ULL << HX711_2_DOUT_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // ¡DESHABILITADO!
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // ¡DESHABILITADO!
     gpio_config(&io_conf);
-    ESP_LOGI(TAG, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
+    ESP_LOGI(TAG_GPIO, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
 
-    // Crear la cola de eventos antes de crear las tareas que la usaran
+    // COLA DE EVENTOS
+
     button_event_queue = xQueueCreate(10, sizeof(button_event_t));
     if (button_event_queue == NULL) {
         ESP_LOGE(TAG_MAIN, "Fallo al crear la cola de eventos. Reiniciando...");
@@ -132,13 +142,13 @@ void user_init(void) {
         esp_restart();
     }
 
-    weight_queue = xQueueCreate(1, sizeof(float));
+    weight_queue = xQueueCreate(2, sizeof(Peso_Data_t));
     if (weight_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de peso.");
         return;
     }
 
-    height_queue = xQueueCreate(1, sizeof(float));
+    height_queue = xQueueCreate(2, sizeof(float));
     if (height_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
         return;
@@ -153,24 +163,13 @@ void user_init(void) {
     // Inicializacion de tareas
     xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
 }
-
-// void app_main(void)
-// {
-//     user_init();
-
-//     while(true)
-//     {
-//         // vTaskDelay(portTICK_PERIOD_MS); // Evita el watchdog
-//         // vTaskDelay(pdMS_TO_TICKS(1000));
-//     }
-// }
 
 void app_main(void)
 {
@@ -180,11 +179,7 @@ void app_main(void)
     ESP_LOGI(TAG_MAIN, "Iniciando app_main()...");
     user_init();
     
-    // ¡IMPORTANTE! app_main() debe terminar su ejecución aquí.
-    // FreeRTOS se encargará de ejecutar las tareas que has creado.
-    // NO PONER UN BUCLE while(true) VACÍO AQUÍ.
     ESP_LOGI(TAG_MAIN, "app_main() ha finalizado. Las tareas de FreeRTOS estan ahora ejecutandose.");
-
 }
 
 /* SIN FREERTOS */

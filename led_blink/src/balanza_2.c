@@ -6,32 +6,22 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_rom_caps.h"
-#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
+#include "esp_timer.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "inc/program.h"
+
+// Se asume que las definiciones de calibración y variables globales son accesibles:
+#define ZERO_OFFSET_VALUE 75793L // Raw value obtenido con balanza sin carga
+#define SCALE_FACTOR_VALUE 21906.705f
 
 volatile long hx711_2_raw_reading = 0;
-extern long hx711_weight_kg_public;
-
-// --- Prototipos de funciones ---
-static void hx711_init(void);
-static bool hx711_wait_ready(TickType_t timeout_ticks);
-static long hx711_read_raw(void);
-
-// --- Tag para el logging del ESP-IDF ---
+volatile float hx711_2_weight_kg = 0.0f;
 static const char *TAG = "HX711_DRIVER_2";
 
-// --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
-// Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
-// Obtén este valor promediando varias lecturas sin carga.
-#define ZERO_OFFSET_VALUE -407500L // Raw value obtenido con balanza sin carga (promediado 10)
-
-// Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
-// Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
-#define SCALE_FACTOR_VALUE -25652.1739f // Se uso una pesa de 4.6Kg y una balanza de presicion
-
-// --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
-volatile float hx711_2_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
+static void hx711_init(void);
+static long hx711_read_raw(void);
+static bool hx711_wait_ready(TickType_t timeout_ticks);
 
 /**
  * @brief Inicializa los pines GPIO para la comunicación con el HX711.
@@ -47,7 +37,7 @@ static void hx711_init(void) {
     gpio_set_direction(HX711_2_PD_SCK_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(HX711_2_PD_SCK_PIN, 0); // Poner PD_SCK en LOW al inicio (modo activo)
 
-    ESP_LOGI(TAG, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_2_DOUT_PIN, HX711_2_PD_SCK_PIN);
+    ESP_LOGI(TAG, "HX711: Pines DOUT (GPIO%d) y PD_SCK (GPIO%d) inicializados.", HX711_DOUT_PIN, HX711_PD_SCK_PIN);
     
     // El HX711 se enciende si PD_SCK está LOW. Si estaba en power-down, tomará un tiempo (aprox 50us) para estabilizarse.
     // Aunque hx711_wait_ready() se encargará de esperar.
@@ -124,40 +114,43 @@ static long hx711_read_raw(void) {
 void balanza_2_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
-    long current_raw_value = 1;
-    long promedio = 0;
-    long contador_promedio = 0;
-    ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
+    
+    ESP_LOGI(TAG, "Tarea Balanza 2 inicializada...");
+    
+    Peso_Data_t datos_a_enviar;
+
     while (1) {
-         
+          
         current_raw_value = hx711_read_raw();
-        promedio = current_raw_value + promedio;
-        hx711_2_raw_reading = current_raw_value; // Actualizar variable global (volatile)
-        contador_promedio++;
-        // Calcular el peso en kilogramos usando los valores de calibración
-        // Asegúrate de que SCALE_FACTOR_VALUE seagit  un float para la división.
-        // if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-        //     hx711_weight_kg = ((float)current_raw_value - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-        // } else {
-        //     hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-        //     ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-        // }
+        
+        // 1. Almacenar el valor crudo leído.
+        hx711_2_raw_reading = current_raw_value; 
 
-        if(contador_promedio == 10){
-            contador_promedio = 0;
+        // 2. Calcular el peso en kilogramos usando los valores de calibración.
+        if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
+            hx711_2_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
+        } else {
+            hx711_2_weight_kg = 0.0f;
+            ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+        }
 
-            if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-                hx711_2_weight_kg = ((float)(promedio/10) - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-            } else {
-                hx711_2_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-                ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-            }
+        //datos_a_enviar.peso_balanza_1_kg = hx711_1_weight_kg; 
+        datos_a_enviar.peso_balanza_2_kg = hx711_2_weight_kg; // El valor que acabas de calcular
+        
+        // 3. Enviar la estructura COMPLETA a la cola
+        // El tercer argumento (100) es un tiempo de espera breve (100 ticks)
+        if (xQueueSend(weight_queue, &datos_a_enviar, pdMS_TO_TICKS(100)) != pdPASS) {
+            ESP_LOGW("BALANZA_2_TX", "Fallo al enviar la estructura de peso. Cola llena o timeout.");
+        } else {
+            //ESP_LOGI("BALANZA_2_TX", "Pesos enviados - B1: %.3f, B2: %.3f", datos_a_enviar.peso_balanza_1_kg, datos_a_enviar.peso_balanza_2_kg);
+        }
 
-            ESP_LOGI(TAG, "Lectura cruda HX711: %ld | Peso: %.3f Kg", promedio/10, hx711_2_weight_kg);
-            ESP_LOGI(TAG, "Peso total suma balanzas: %.3f", hx711_2_weight_kg + hx711_weight_kg_public);
-            promedio = 0;
-        }  
+        // 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
+        ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", current_raw_value, hx711_2_weight_kg);
 
-        vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
+        // 4. Pausar para controlar la frecuencia de lectura.
+        
+        vTaskDelay(pdMS_TO_TICKS(500)); 
     }
 }

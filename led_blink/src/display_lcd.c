@@ -473,6 +473,9 @@ void lcd_display_task(void *pvParameters) {
                     case EVENT_BUTTON_UP:
                         current_selection = (current_selection - 1 + num_options) % num_options;
                         break;
+                    case EVENT_BUTTON_BACK:
+                        
+                        break;
                     case EVENT_BUTTON_DOWN:
                         current_selection = (current_selection + 1) % num_options;
                         break;

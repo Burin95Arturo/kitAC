@@ -16,7 +16,9 @@
 // --- Tag para el logging del ESP-IDF ---
 static const char *TAG = "HCSR04";
 
-long getDistance() {
+static long getDistance(void);
+
+static long getDistance(void) {
     gpio_set_level(TRIG_PIN, 0);
     esp_rom_delay_us(2);
     gpio_set_level(TRIG_PIN, 1);
@@ -42,26 +44,20 @@ long getDistance() {
 
 void hc_sr04_task(void *pvParameters) {
     long distance;
-    float current_height_m;
+    //float current_height_m;
+    
     while (1) {
         distance = getDistance();
         printf("Distancia: %ld cm\n", distance);
 
-        if (distance < 20) {
-            gpio_set_level(LED_PIN, 1);
+        //Poner indicacion de leds
+
+        //Envio altura a queue
+        if (xQueueSend(height_queue, &distance, 0) != pdPASS) {
+            ESP_LOGI(TAG, "Fallo al enviar la altura (%.2ld cm) a la cola. Cola llena.", distance);
         } else {
-            gpio_set_level(LED_PIN, 0);
-        }
-
-        current_height_m = (long) distance;
-
-        if (current_height_m <= 0 || current_height_m >= 1.5){ // Evaluo el rango de 0 a 1.5m de altura, mas no va a haber
-            xQueueSend(error_queue, "A", (TickType_t)0); // Envio codigo de error en Altura
-        }
-
-        // Enviar el peso calculado a la cola
-        if (xQueueSend(height_queue, &current_height_m, (TickType_t)0) != pdPASS) {
-            ESP_LOGE(TAG, "No se pudo enviar el peso a la cola.");
+             // Opcional: Confirmar el envío
+             //ESP_LOGI("HCSR04", "Altura enviada: %.2f m", current_height_m);
         }
 
         vTaskDelay(pdMS_TO_TICKS(500));

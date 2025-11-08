@@ -4,21 +4,41 @@
 // Del pin 6 al 11 se pone en complicado el ESP32, hay que ver bien la funcion del GPIO pero 
 // hace que se reinicie el equipo mientras configura.
 
+//Sensor altura
 #define TRIG_PIN            GPIO_NUM_4      // Pin TRIG del HC-SR04
 #define ECHO_PIN            GPIO_NUM_5      // Pin ECHO del HC-SR04
+
+//Led de estado
 #define LED_PIN             GPIO_NUM_2      // Led interno ESP32
-#define HALL_PIN            GPIO_NUM_0      // Pin HALL
+#define LED_PIN_R             GPIO_NUM_2      // R
+#define LED_PIN_G             GPIO_NUM_2      // G
+#define LED_PIN_B             GPIO_NUM_2      // B
+
+//Alarma sonora
+#define ALARM_PIN             GPIO_NUM_2      // Alarma
+
+//Sensores de baranda
+#define HALL_PIN            GPIO_NUM_0      // Pin HALL - Sensor hall (baranda derecha cabecera)
+#define HALL_PIN_2            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda cabecera)
+#define HALL_PIN_3            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda derecha piecera)
+#define HALL_PIN_4            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda piecera)
+
+//IR sensor
 #define IR_PIN              GPIO_NUM_32     // Pin IR
-#define HX711_DOUT_PIN      GPIO_NUM_18     // Pin de datos (DOUT) del HX711
-#define HX711_PD_SCK_PIN    GPIO_NUM_19     // Pin de reloj (PD_SCK) del HX711
+
+//Buttons
 #define BUTTON_UP_PIN       GPIO_NUM_9     // Botón para "Arriba" o "Incrementar"
 #define BUTTON_DOWN_PIN     GPIO_NUM_12     // Botón para "Abajo" o "Disminuir"
 #define BUTTON_SELECT_PIN   GPIO_NUM_14   // Botón para "Seleccionar" o "Confirmar"
+#define BUTTON_BACK_PIN   GPIO_NUM_14   // Botón para "Back" o "Cancel"
+
+//1ra balanza
+#define HX711_DOUT_PIN      GPIO_NUM_18     // Pin de datos (DOUT) del HX711
+#define HX711_PD_SCK_PIN    GPIO_NUM_19     // Pin de reloj (PD_SCK) del HX711
+
 //2da balanza 
 #define HX711_2_DOUT_PIN    GPIO_NUM_25     // Pin de datos (DOUT) del HX711 de la 2da balanza
 #define HX711_2_PD_SCK_PIN  GPIO_NUM_26     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
-
-//not tested
 
 // --- Definiciones de Pines para el LCD ---
 // ¡AJUSTA ESTOS PINES A TUS CONEXIONES REALES EN EL ESP32!
@@ -31,5 +51,6 @@
 #define LCD_DB6_PIN         GPIO_NUM_16  // Data Bit 6 (DB6)
 #define LCD_DB7_PIN         GPIO_NUM_15   // Data Bit 7 (DB7)
 
+#define LED_HALL_1          GPIO_NUM_21  // LED HALL 1
 
 
