@@ -26,6 +26,7 @@ static const char *TAG_GPIO = "GPIO_INIT";
 #define MAX_LENGHT_QUEUE 10
 
 QueueHandle_t central_queue = NULL;
+QueueHandle_t display_queue = NULL;
 
 SemaphoreHandle_t task_test_semaphore = NULL;
 SemaphoreHandle_t peso_semaphore = NULL;
@@ -33,6 +34,7 @@ SemaphoreHandle_t hall_semaphore = NULL;
 SemaphoreHandle_t ir_semaphore = NULL;
 SemaphoreHandle_t altura_semaphore = NULL;
 SemaphoreHandle_t button_semaphore = NULL;
+SemaphoreHandle_t inclinacion_semaphore = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -171,39 +173,38 @@ void user_init(void) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         esp_restart();
     }
+
+    inclinacion_semaphore = xSemaphoreCreateBinary();
+    if (inclinacion_semaphore == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario inclinacion_semaphore. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
     if (central_queue == NULL) {
-        ESP_LOGE("MAIN", "No se pudo crear la cola de altura.");
+        ESP_LOGE("MAIN", "No se pudo crear la cola central.");
+        return;
+    }
+    display_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(display_t));
+    if (display_queue == NULL) {
+        ESP_LOGE("MAIN", "No se pudo crear la cola del display.");
         return;
     }
 
     // Inicializacion de tareas
 
-    //estas tareas las deshabilite para probar tasktest
-            //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
-            //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
-    //estas ya estaban así
-    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-
-            //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-            //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-            //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
+    //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
 }
-
-// void app_main(void)
-// {
-//     user_init();
-
-//     while(true)
-//     {
-//         // vTaskDelay(portTICK_PERIOD_MS); // Evita el watchdog
-//         // vTaskDelay(pdMS_TO_TICKS(1000));
-//     }
-// }
 
 void app_main(void)
 {
