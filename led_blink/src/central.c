@@ -115,6 +115,8 @@ void central_task(void *pvParameters) {
             if (hall_change) {
                 display_data.state = WARNING;
                 hall_change = false;
+                // Hacer sonar a un buzer o algo para avisar cambio
+                // prender un led si la baranda queda abajo
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }
@@ -122,6 +124,7 @@ void central_task(void *pvParameters) {
             if (ir_change) {
                 display_data.state = WARNING;
                 ir_change = false;
+                // Hacer sonar a un buzer o algo para avisar cambio
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }
