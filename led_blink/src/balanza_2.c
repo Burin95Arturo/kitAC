@@ -1,34 +1,8 @@
-// Author: Burin Arturo
-// Date: 10/06/2025
-
 #include "inc/balanza_2.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_rom_caps.h"
-#include "esp_timer.h" // Incluye esp_timer para medir el tiempo
-#include "driver/gpio.h"
-#include "esp_log.h"
+
 
 volatile long hx711_2_raw_reading = 0;
 extern long hx711_weight_kg_public;
-
-// --- Prototipos de funciones ---
-static void hx711_init(void);
-static bool hx711_wait_ready(TickType_t timeout_ticks);
-static long hx711_read_raw(void);
-
-// --- Tag para el logging del ESP-IDF ---
-static const char *TAG = "HX711_DRIVER_2";
-
-// --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
-// Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
-// Obtén este valor promediando varias lecturas sin carga.
-#define ZERO_OFFSET_VALUE -407500L // Raw value obtenido con balanza sin carga (promediado 10)
-
-// Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
-// Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
-#define SCALE_FACTOR_VALUE -25652.1739f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 // --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
 volatile float hx711_2_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
