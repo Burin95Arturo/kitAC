@@ -23,6 +23,7 @@ extern SemaphoreHandle_t ir_semaphore; // Semáforo binario para el sensor ir
 extern SemaphoreHandle_t altura_semaphore; // Semáforo binario para el sensor de altura
 extern SemaphoreHandle_t button_semaphore; // Semáforo binario para lo botones
 extern SemaphoreHandle_t inclinacion_semaphore; // Semáforo binario para sensor de inclinación
+extern SemaphoreHandle_t buzzer_semaphore; // Semáforo binario para el buzer
 typedef enum {
     SENSOR_ALTURA=0,
     SENSOR_HALL,

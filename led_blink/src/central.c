@@ -91,6 +91,10 @@ void central_task(void *pvParameters) {
             display_data.data = aux_data;
         }
 
+        if (!aux_data.hall_on_off) {
+            gpio_set_level(LED_PIN, 1);
+        } 
+
         // Nose si lo que viene va dentro del if anterior o no... yo supongo que no, pero es a corregir luego
         if (flag_balanza && first_flag_balanza) {
                 first_flag_balanza = false;
@@ -115,8 +119,7 @@ void central_task(void *pvParameters) {
             if (hall_change) {
                 display_data.state = WARNING;
                 hall_change = false;
-                // Hacer sonar a un buzer o algo para avisar cambio
-                // prender un led si la baranda queda abajo
+                xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }
@@ -124,7 +127,7 @@ void central_task(void *pvParameters) {
             if (ir_change) {
                 display_data.state = WARNING;
                 ir_change = false;
-                // Hacer sonar a un buzer o algo para avisar cambio
+                xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }

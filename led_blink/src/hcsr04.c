@@ -36,9 +36,9 @@ void hc_sr04_task(void *pvParameters) {
             printf("Distancia: %ld cm\n", distance);
 
             if (distance < 20) {
-                gpio_set_level(LED_PIN, 1);
+                gpio_set_level(INTERNAL_LED_PIN, 1);
             } else {
-                gpio_set_level(LED_PIN, 0);
+                gpio_set_level(INTERNAL_LED_PIN, 0);
             }
 
             current_height_m = (long) distance;

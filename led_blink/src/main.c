@@ -17,6 +17,7 @@
 
 #include "inc/tasktest.h"
 #include "inc/central.h"
+#include "inc/buzzer.h"
 #include <freertos/queue.h>
 
 static const char *TAG_MSJ = "MSJ";
@@ -35,13 +36,14 @@ SemaphoreHandle_t ir_semaphore = NULL;
 SemaphoreHandle_t altura_semaphore = NULL;
 SemaphoreHandle_t button_semaphore = NULL;
 SemaphoreHandle_t inclinacion_semaphore = NULL;
+SemaphoreHandle_t buzzer_semaphore = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
-        gpio_set_level(LED_PIN, 1);
+        gpio_set_level(INTERNAL_LED_PIN, 1);
         ESP_LOGI(TAG_MSJ, "LED ON");
         vTaskDelay(pdMS_TO_TICKS(1000));
-        gpio_set_level(LED_PIN, 0);
+        gpio_set_level(INTERNAL_LED_PIN, 0);
         ESP_LOGI(TAG_MSJ, "LED OFF");
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -57,9 +59,9 @@ void user_init(void) {
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // NUNCA pull-up/down en salidas
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // NUNCA pull-up/down en salidas
 
-    io_conf.pin_bit_mask = (1ULL << LED_PIN);
+    io_conf.pin_bit_mask = (1ULL << INTERNAL_LED_PIN);
     gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (LED) configurado como salida.", LED_PIN);
+    ESP_LOGI(TAG_MSJ, "GPIO %d (LED) configurado como salida.", INTERNAL_LED_PIN);
 
     io_conf.pin_bit_mask = (1ULL << TRIG_PIN);
     gpio_config(&io_conf);
@@ -181,6 +183,13 @@ void user_init(void) {
         esp_restart();
     }
 
+    buzzer_semaphore = xSemaphoreCreateBinary();
+    if (buzzer_semaphore == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario buzzer_semaphore. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
     if (central_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola central.");
@@ -204,6 +213,7 @@ void user_init(void) {
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
+    xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
 }
 
 void app_main(void)

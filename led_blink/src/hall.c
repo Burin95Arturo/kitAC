@@ -13,7 +13,7 @@ void hall_sensor_task(void *pvParameters) {
 
         if (xSemaphoreTake(hall_semaphore, portMAX_DELAY) == pdTRUE) {
         
-//            gpio_set_level(LED_PIN, getHallSensorState());
+//            gpio_set_level(INTERNAL_LED_PIN, getHallSensorState());
             hall_data.origen = SENSOR_HALL;
             hall_data.hall_on_off = getHallSensorState();
         
