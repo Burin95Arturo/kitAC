@@ -14,16 +14,25 @@ void button_task(void *pvParameters) {
 
             // Leer el estado de los botones
             if (gpio_get_level(BUTTON_PESO_PIN) == 0) {
-                event = EVENT_BUTTON_PESO;
-                button_pressed = true;
+                vTaskDelay(pdMS_TO_TICKS(50));
+                if (gpio_get_level(BUTTON_PESO_PIN) == 0) {
+                    vTaskDelay(pdMS_TO_TICKS(50));        
+                    event = EVENT_BUTTON_PESO;
+                    button_pressed = true;
+                }
             } else if (gpio_get_level(BUTTON_TARA_PIN) == 0) {
-                event = EVENT_BUTTON_TARA;
-                button_pressed = true;
+                vTaskDelay(pdMS_TO_TICKS(50));
+                if (gpio_get_level(BUTTON_TARA_PIN) == 0) {
+                    event = EVENT_BUTTON_TARA;
+                    button_pressed = true;
+                }
             } else if (gpio_get_level(BUTTON_ATRAS_PIN) == 0) {
-                event = EVENT_BUTTON_ATRAS;
-                button_pressed = true;
+                vTaskDelay(pdMS_TO_TICKS(50));
+                if (gpio_get_level(BUTTON_ATRAS_PIN) == 0) {
+                    event = EVENT_BUTTON_ATRAS;
+                    button_pressed = true;
+                }
             }
-
             // Si se presiono un boton, envia el evento a la cola
             if (button_pressed) {
                 // Enviamos el evento a la cola. Espera 10ms si la cola esta llena.
