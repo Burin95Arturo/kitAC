@@ -161,11 +161,11 @@ void user_init(void) {
     }
     
     // Inicializacion de tareas
-    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);

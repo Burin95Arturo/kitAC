@@ -12,8 +12,8 @@
 #include "inc/program.h"
 
 // Se asume que las definiciones de calibración y variables globales son accesibles:
-#define ZERO_OFFSET_VALUE 75793L // Raw value obtenido con balanza sin carga
-#define SCALE_FACTOR_VALUE 21906.705f
+#define ZERO_OFFSET_VALUE 258794L // Raw value obtenido con balanza sin carga
+#define SCALE_FACTOR_VALUE 7925.3f // (Valor con peso conocido - Raw) / peso conocido
 
 volatile long hx711_2_raw_reading = 0;
 volatile float hx711_2_weight_kg = 0.0f;
@@ -117,7 +117,8 @@ void balanza_2_task(void *pvParameters){
     long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
     
     ESP_LOGI(TAG, "Tarea Balanza 2 inicializada...");
-    
+    int count = 0;
+    //float value = 0;
     Peso_Data_t datos_a_enviar;
 
     while (1) {
@@ -125,8 +126,10 @@ void balanza_2_task(void *pvParameters){
         current_raw_value = hx711_read_raw();
         
         // 1. Almacenar el valor crudo leído.
-        hx711_2_raw_reading = current_raw_value; 
-
+        // hx711_2_raw_reading = current_raw_value; 
+        if (count != 10){ // Para que muestre 10 valores y luego no lo modifique mas
+            hx711_2_raw_reading = current_raw_value;
+        }
         // 2. Calcular el peso en kilogramos usando los valores de calibración.
         if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
             hx711_2_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
@@ -147,10 +150,17 @@ void balanza_2_task(void *pvParameters){
         }
 
         // 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
-        ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", current_raw_value, hx711_2_weight_kg);
+        // ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", current_raw_value, hx711_2_weight_kg);
 
         // 4. Pausar para controlar la frecuencia de lectura.
         
+        // if (count == 10){
+        //     ESP_LOGI(TAG, "Lectura Balanza 2 fijo: %ld | Peso: %.3f Kg", current_raw_value, value);
+        // }else{
+            ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", current_raw_value, hx711_2_weight_kg);
+        //     count ++;
+        //     value = hx711_2_weight_kg;
+        // }
         vTaskDelay(pdMS_TO_TICKS(500)); 
     }
 }
