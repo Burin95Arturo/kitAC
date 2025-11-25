@@ -29,7 +29,7 @@ typedef enum {
     SENSOR_HALL,
     SENSOR_IR,
     SENSOR_BALANZA,
-    SENSOR_GIROSCOPIO,
+    SENSOR_ACELEROMETRO,
     TEST_TASK,
     BUTTON_EVENT
 } sensor_origen_t;
@@ -42,7 +42,7 @@ typedef enum {
 typedef struct {
     sensor_origen_t origen;
     long altura;
-    int inclinacion;
+    float inclinacion;
     float peso;
     bool hall_on_off;
     bool ir_on_off;

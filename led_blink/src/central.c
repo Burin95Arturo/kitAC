@@ -28,7 +28,7 @@ void central_task(void *pvParameters) {
         
         // Leer de la cola central_queue
         if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {
-            printf("[Central] Origen: %d, Altura: %ld, Peso: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %d\n",
+            printf("[Central] Origen: %d, Altura: %ld, Peso: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f\n",
                 received_data.origen,
                 received_data.altura,
                 received_data.peso,
@@ -59,7 +59,7 @@ void central_task(void *pvParameters) {
                     aux_data.peso = received_data.peso;
                     break;
                 
-                case SENSOR_GIROSCOPIO:
+                case SENSOR_ACELEROMETRO:
                     // Procesar inclinación si es necesario 
                     inclinacion_change = (received_data.inclinacion != aux_data.inclinacion) ? true : false;
                     aux_data.inclinacion = received_data.inclinacion;   
@@ -91,6 +91,7 @@ void central_task(void *pvParameters) {
             display_data.data = aux_data;
         }
 
+        // Prendo luz si la baranda esta baja
         if (!aux_data.hall_on_off) {
             gpio_set_level(LED_PIN, 1);
         } 
@@ -109,7 +110,7 @@ void central_task(void *pvParameters) {
         else if (!flag_cambiar_vista && !flag_balanza) {
             display_data.state = inclinacion_change ? CHANGE : NO_CHANGE;
             inclinacion_change = false;
-            display_data.data.origen = SENSOR_GIROSCOPIO;
+            display_data.data.origen = SENSOR_ACELEROMETRO;
             if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                 printf("No se pudo enviar la inclinacion a la cola.\n");
             }
