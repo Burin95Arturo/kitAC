@@ -15,7 +15,7 @@
 #define BUTTON_TARA_PIN     GPIO_NUM_12     // Botón para "Abajo" o "Disminuir"
 #define BUTTON_ATRAS_PIN    GPIO_NUM_14   // Botón para "Seleccionar" o "Confirmar"
 #define BUZZER_PIN          GPIO_NUM_27     // Pin del Buzzer   
-#define LED_PIN             GPIO_NUM_33     // Pin del LED externo  
+#define LED_PIN             GPIO_NUM_39    // Pin del LED externo  
 //2da balanza 
 #define HX711_2_DOUT_PIN    GPIO_NUM_25     // Pin de datos (DOUT) del HX711 de la 2da balanza
 #define HX711_2_PD_SCK_PIN  GPIO_NUM_26     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza

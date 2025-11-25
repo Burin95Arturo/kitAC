@@ -17,12 +17,12 @@ void central_task(void *pvParameters) {
 
     while (1) {
 
-        xSemaphoreGive(button_semaphore);
+        // xSemaphoreGive(button_semaphore);
         
         if (!flag_balanza) {
-            xSemaphoreGive(hall_semaphore);
-            xSemaphoreGive(ir_semaphore);  
-            xSemaphoreGive(altura_semaphore);
+            // xSemaphoreGive(hall_semaphore);
+            // xSemaphoreGive(ir_semaphore);  
+            // xSemaphoreGive(altura_semaphore);
             xSemaphoreGive(inclinacion_semaphore);
         }
         
@@ -72,7 +72,7 @@ void central_task(void *pvParameters) {
                 // Si es ATRAS y flag_balanza inactivo, activa flag_cambiar_vista porque se entiende que se quiere cambiar el sensor que se muestra
                     if (received_data.button_event == EVENT_BUTTON_PESO || received_data.button_event == EVENT_BUTTON_TARA) {
                         flag_balanza = true;
-                        xSemaphoreGive(peso_semaphore);
+//                        xSemaphoreGive(peso_semaphore);
                         first_flag_balanza = true;
                     }
                     else if (flag_balanza && received_data.button_event == EVENT_BUTTON_ATRAS) {
@@ -114,13 +114,24 @@ void central_task(void *pvParameters) {
             if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                 printf("No se pudo enviar la inclinacion a la cola.\n");
             }
+            printf("Inclinacion de %f enviada a la cola.\n", display_data.data.inclinacion);
+            gpio_set_level(INTERNAL_LED_PIN, 0);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            gpio_set_level(INTERNAL_LED_PIN, 1); 
+            vTaskDelay(pdMS_TO_TICKS(500));
+            gpio_set_level(INTERNAL_LED_PIN, 0);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            gpio_set_level(INTERNAL_LED_PIN, 1); 
+            vTaskDelay(pdMS_TO_TICKS(500));
+            gpio_set_level(INTERNAL_LED_PIN, 0);
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
         else {
             // Ver que se hace cuando se apreta el boton "atras" (o sea, el cambiar la vista)
             if (hall_change) {
                 display_data.state = WARNING;
                 hall_change = false;
-                xSemaphoreGive(buzzer_semaphore);
+                // xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }
@@ -128,7 +139,7 @@ void central_task(void *pvParameters) {
             if (ir_change) {
                 display_data.state = WARNING;
                 ir_change = false;
-                xSemaphoreGive(buzzer_semaphore);
+                // xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
                 }
