@@ -82,13 +82,14 @@ void central_task(void *pvParameters) {
                     else {
                         flag_cambiar_vista = true;
                     }
-
+                    aux_data.button_event = received_data.button_event;
                     break;
                 
                 default:
                     break;
-            }        
-            display_data.data = aux_data;
+            }       
+            aux_data.origen = received_data.origen; 
+            display_data.data = aux_data; 
         }
 
         // Prendo luz si la baranda esta baja
