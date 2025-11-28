@@ -83,7 +83,7 @@ void lcdDrawBMP(TFT_t *dev, const char *filename, uint16_t x, uint16_t y)
 
     // Cada fila debe estar alineada a múltiplos de 4 bytes
     int rowSize = ((width * 2 + 3) & ~3);
-    ESP_LOGI(TAG, "width=%d, height=%d, rowSize=%d", width, height, rowSize);
+    ESP_LOGI("BMP", "width=%d, height=%d, rowSize=%d", width, height, rowSize);
 
     ESP_LOGI("BMP", "rowSize=%d bytes", rowSize);
 
@@ -146,10 +146,14 @@ void lcdDrawBMP(TFT_t *dev, const char *filename, uint16_t x, uint16_t y)
 
 void display_tft_task(void *pvParameters) {
 
+    //static display_t received_display_data;
+
+    
     TFT_t dev;
     //Dentro de dev hay un campo _TFT_Handle que es el handle del dispositivo SPI (spi_device_handle_t)
     //ese mismo lo usaré para el DMA
     
+    //Fuentes
     InitFontx(latin32fx, "/data/LATIN32B.FNT", "");
     InitFontx(ilgh24fx, "/data/ILGH24XB.FNT", "");
     InitFontx(Cons32fx, "/data/Cons32.FNT", "");
@@ -157,7 +161,6 @@ void display_tft_task(void *pvParameters) {
 
     uint16_t contador = 2;
     char string_contador[5];
-
 
     uint16_t model = 0x9341; //ILI9341
     ESP_LOGI("TFT", "Disabling Touch Contoller");
@@ -167,8 +170,8 @@ void display_tft_task(void *pvParameters) {
 	int XPT_SCLK_GPIO = -1;
 	int XPT_MOSI_GPIO = -1;
 
-    init_spiffs("/data");
 
+    //Inicialización SPI y TFT
     spi_clock_speed(10*1000*1000); // 10 MHz
 	spi_master_init(&dev, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_TFT_CS_GPIO, CONFIG_DC_GPIO, 
 		CONFIG_RESET_GPIO, CONFIG_BL_GPIO, XPT_MISO_GPIO, XPT_CS_GPIO, XPT_IRQ_GPIO, XPT_SCLK_GPIO, XPT_MOSI_GPIO);
@@ -178,43 +181,48 @@ void display_tft_task(void *pvParameters) {
     //VER
     //lcdSetRotation(&dev, 1);
 
-    //. 
-
     lcdFillScreen(&dev, WHITE);
     lcdSetFontDirection(&dev, DEFAULT_ORIENTATION);
+
+    //Necesario para las fuentes e imágenes desde SPIFFS
+    init_spiffs("/data");
     
+    /* SECCIÓN PARA MANEJO DE IMÁGENES - No completo*/
+    /************************************************* */ 
     // Abrir JPG desde SPIFFS
+    /*
+        struct stat st;
+        if (stat("/data/tony.bmp", &st) == 0) {
+            ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony.bmp", st.st_size);
+        } else {
+            ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony.bmp");
+        }
 
-    struct stat st;
-    if (stat("/data/tony.bmp", &st) == 0) {
-        ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony.bmp", st.st_size);
-    } else {
-        ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony.bmp");
-    }
+        lcdDrawBMP(&dev, "/data/tony.bmp", 0, 0);
 
-    lcdDrawBMP(&dev, "/data/tony.bmp", 0, 0);
+        vTaskDelay(pdMS_TO_TICKS(20*10*100));  
 
-    vTaskDelay(pdMS_TO_TICKS(20*10*100));  
-
-    lcdDrawFillRect(&dev, 0, 0, 238, 319, RED);
-    vTaskDelay(pdMS_TO_TICKS(5*10*100));  
+        lcdDrawFillRect(&dev, 0, 0, 238, 319, RED);
+        vTaskDelay(pdMS_TO_TICKS(5*10*100));  
 
 
-    // Dibujar un rectángulo rojo 100x100 manualmente
-    uint16_t lines[100];
+        // Dibujar un rectángulo rojo 100x100 manualmente
+        uint16_t lines[100];
 
-    // Rellenar línea roja (byte-swapped)
-    for (int i = 0; i < 100; i++) {
-        uint16_t c = YELLOW;
-        lines[i] = (c << 8) | (c >> 8);   // 🔄 swap bytes
-    }
+        // Rellenar línea roja (byte-swapped)
+        for (int i = 0; i < 100; i++) {
+            uint16_t c = YELLOW;
+            lines[i] = (c << 8) | (c >> 8);   // 🔄 swap bytes
+        }
 
-    lcdSetWindow(&dev, 0, 0, 99, 99);
-    spi_master_write_comm_byte(&dev, 0x2C);
+        lcdSetWindow(&dev, 0, 0, 99, 99);
+        spi_master_write_comm_byte(&dev, 0x2C);
 
-    for (int y = 0; y < 100; y++) {
-        spi_master_write_colors_fast(&dev, lines, 100);
-    }
+        for (int y = 0; y < 100; y++) {
+            spi_master_write_colors_fast(&dev, lines, 100);
+        }
+        */
+    /************************************************* */ 
 
     vTaskDelay(pdMS_TO_TICKS(5*10*100));  
 
@@ -261,6 +269,15 @@ void display_tft_task(void *pvParameters) {
 
     while (1) {
 
+        // Leer de la cola central_queue
+       // if (xQueueReceive(display_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {
+            // Procesar los datos recibidos
+         //   ESP_LOGI("TFT_TASK", "Datos recibidos: %d", received_data);
+            // Aquí puedes actualizar la pantalla TFT según los datos recibidos
+        //}   
+
+        
+        
         /*    
         lcdDrawFillRect(&dev, 55, 240, 75, 300, WHITE);
         sprintf(string_contador, "%d", contador);   
