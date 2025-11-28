@@ -18,12 +18,12 @@ void central_task(void *pvParameters) {
     while (1) {
 
         // xSemaphoreGive(button_semaphore);
+        xSemaphoreGive(inclinacion_semaphore);
         
         if (!flag_balanza) {
             // xSemaphoreGive(hall_semaphore);
             // xSemaphoreGive(ir_semaphore);  
             // xSemaphoreGive(altura_semaphore);
-            xSemaphoreGive(inclinacion_semaphore);
         }
         
         // Leer de la cola central_queue
