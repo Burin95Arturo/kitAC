@@ -18,12 +18,13 @@ void central_task(void *pvParameters) {
     while (1) {
 
         // xSemaphoreGive(button_semaphore);
-        
+        xSemaphoreGive(inclinacion_semaphore);
+
         if (!flag_balanza) {
             // xSemaphoreGive(hall_semaphore);
             // xSemaphoreGive(ir_semaphore);  
             // xSemaphoreGive(altura_semaphore);
-            xSemaphoreGive(inclinacion_semaphore);
+            //xSemaphoreGive(inclinacion_semaphore);
         }
         
         // Leer de la cola central_queue
@@ -93,9 +94,10 @@ void central_task(void *pvParameters) {
         }
 
         // Prendo luz si la baranda esta baja
-        if (!aux_data.hall_on_off) {
+        //VER DONDE HAY PIN DISPONIBLE PARA LED, CAMBIAR DEFINE DE LED_PIN EN PINOUT.H
+        /*if (!aux_data.hall_on_off) {
             gpio_set_level(LED_PIN, 1);
-        } 
+        } */
 
         // Nose si lo que viene va dentro del if anterior o no... yo supongo que no, pero es a corregir luego
         if (flag_balanza && first_flag_balanza) {
