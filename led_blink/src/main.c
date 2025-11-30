@@ -33,6 +33,7 @@ QueueHandle_t display_queue = NULL;
 
 SemaphoreHandle_t task_test_semaphore = NULL;
 SemaphoreHandle_t peso_semaphore = NULL;
+SemaphoreHandle_t peso_semaphore_2 = NULL;
 SemaphoreHandle_t hall_semaphore = NULL;
 SemaphoreHandle_t ir_semaphore = NULL;
 SemaphoreHandle_t altura_semaphore = NULL;
@@ -150,6 +151,13 @@ void user_init(void) {
         esp_restart();
     }
 
+    peso_semaphore_2 = xSemaphoreCreateBinary();
+    if (peso_semaphore_2 == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario peso_semaphore_2. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     hall_semaphore = xSemaphoreCreateBinary();
     if (hall_semaphore == NULL) {
         ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario hall_semaphore. Reiniciando...");
@@ -211,8 +219,8 @@ void user_init(void) {
     xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
     xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);

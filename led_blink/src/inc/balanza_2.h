@@ -25,10 +25,10 @@ static const char *TAG = "HX711_DRIVER_2";
 // --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
 // Obtén este valor promediando varias lecturas sin carga.
-#define ZERO_OFFSET_VALUE -407500L // Raw value obtenido con balanza sin carga (promediado 10)
+#define ZERO_OFFSET_VALUE_2 -407500L // Raw value obtenido con balanza sin carga (promediado 10)
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
-#define SCALE_FACTOR_VALUE -25652.1739f // Se uso una pesa de 4.6Kg y una balanza de presicion
+#define SCALE_FACTOR_VALUE_2 -25652.1739f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 void balanza_2_task(void *pvParameters);

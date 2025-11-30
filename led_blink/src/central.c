@@ -18,20 +18,24 @@ void central_task(void *pvParameters) {
     while (1) {
 
         xSemaphoreGive(button_semaphore);
+        xSemaphoreGive(peso_semaphore);
+        xSemaphoreGive(peso_semaphore_2);
+        xSemaphoreGive(hall_semaphore);
+        xSemaphoreGive(altura_semaphore);
+
         
         if (!flag_balanza) {
-            xSemaphoreGive(hall_semaphore);
-            xSemaphoreGive(ir_semaphore);  
-            xSemaphoreGive(altura_semaphore);
-            xSemaphoreGive(inclinacion_semaphore);
+//            xSemaphoreGive(ir_semaphore);  
+//            xSemaphoreGive(inclinacion_semaphore);
         }
         
         // Leer de la cola central_queue
         if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {
-            printf("[Central] Origen: %d, Altura: %ld, Peso: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f\n",
+            printf("[Central] Origen: %d, Altura: %ld, Peso_1: %.2f, Peso_2: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f\n",
                 received_data.origen,
                 received_data.altura,
-                received_data.peso,
+                received_data.peso_1,
+                received_data.peso_2,
                 received_data.hall_on_off,
                 received_data.ir_on_off,
                 received_data.inclinacion);            
@@ -55,11 +59,17 @@ void central_task(void *pvParameters) {
                 
                 case SENSOR_BALANZA:
                     // Procesar peso si es necesario
-                    peso_change = (received_data.peso != aux_data.peso) ? true : false;
-                    aux_data.peso = received_data.peso;
+                    peso_change = (received_data.peso_1 != aux_data.peso_1) ? true : false;
+                    aux_data.peso_1 = received_data.peso_1;
                     break;
                 
-                case SENSOR_ACELEROMETRO:
+                case SENSOR_BALANZA_2:
+                    // Procesar peso si es necesario
+                    peso_change = (received_data.peso_2 != aux_data.peso_2) ? true : false;
+                    aux_data.peso_2 = received_data.peso_2;
+                    break;
+                
+                    case SENSOR_ACELEROMETRO:
                     // Procesar inclinación si es necesario 
                     inclinacion_change = (received_data.inclinacion != aux_data.inclinacion) ? true : false;
                     aux_data.inclinacion = received_data.inclinacion;   
@@ -73,6 +83,7 @@ void central_task(void *pvParameters) {
                     if (received_data.button_event == EVENT_BUTTON_PESO || received_data.button_event == EVENT_BUTTON_TARA) {
                         flag_balanza = true;
                         xSemaphoreGive(peso_semaphore);
+                        xSemaphoreGive(peso_semaphore_2);
                         first_flag_balanza = true;
                     }
                     else if (flag_balanza && received_data.button_event == EVENT_BUTTON_ATRAS) {
@@ -87,16 +98,16 @@ void central_task(void *pvParameters) {
                 
                 default:
                     break;
-            }        
+            } 
+            aux_data.origen = received_data.origen;       
             display_data.data = aux_data;
         }
 
         // Prendo luz si la baranda esta baja
-        if (!aux_data.hall_on_off) {
-            gpio_set_level(LED_PIN, 1);
-        } 
+        // if (!aux_data.hall_on_off) {
+        //     gpio_set_level(LED_PIN, 1);
+        // } 
 
-        // Nose si lo que viene va dentro del if anterior o no... yo supongo que no, pero es a corregir luego
         if (flag_balanza && first_flag_balanza) {
                 first_flag_balanza = false;
             }
@@ -104,7 +115,7 @@ void central_task(void *pvParameters) {
             display_data.state = peso_change ? CHANGE : NO_CHANGE;
             peso_change = false;
             if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                printf("No se pudo enviar el peso a la cola.\n");
+                printf("No se pudo enviar el peso a la cola display.\n");
             }
         }
         else if (!flag_cambiar_vista && !flag_balanza) {
@@ -112,7 +123,7 @@ void central_task(void *pvParameters) {
             inclinacion_change = false;
             display_data.data.origen = SENSOR_ACELEROMETRO;
             if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                printf("No se pudo enviar la inclinacion a la cola.\n");
+                printf("No se pudo enviar la inclinacion a la cola display.\n");
             }
         }
         else {
@@ -122,7 +133,7 @@ void central_task(void *pvParameters) {
                 hall_change = false;
                 xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("No se pudo enviar informacion a la cola.\n");
+                    printf("No se pudo enviar informacion a la cola display.\n");
                 }
             }
             if (ir_change) {
@@ -130,14 +141,14 @@ void central_task(void *pvParameters) {
                 ir_change = false;
                 xSemaphoreGive(buzzer_semaphore);
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("No se pudo enviar informacion a la cola.\n");
+                    printf("No se pudo enviar informacion a la cola display.\n");
                 }
             }
             if (altura_change) {
                 display_data.state = WARNING;
                 altura_change = false;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("No se pudo enviar informacion a la cola.\n");
+                    printf("No se pudo enviar informacion a la cola display.\n");
                 }
             }
         }
