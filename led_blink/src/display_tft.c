@@ -190,7 +190,7 @@ void display_tft_task(void *pvParameters) {
             ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony189.bmp");
         }
 
-        lcdDrawBMP(&dev, "/data/tony236.bmp", 0, 0);
+        lcdDrawBMP(&dev, "/data/tony.bmp", 0, 0);
 
         vTaskDelay(pdMS_TO_TICKS(20*10*100));  
 
