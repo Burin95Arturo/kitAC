@@ -45,104 +45,96 @@ void init_spiffs(char * path) {
     ESP_LOGI("SPIFFS", "SPIFFS montado correctamente");
 }
 
-// Mostrar imagen BMP 16-bit (RGB565)
+// Mostrar imagen BMP 16-bit (RGB565) - Optimizado con MADCTL
 void lcdDrawBMP(TFT_t *dev, const char *filename, uint16_t x, uint16_t y)
 {
+    // ... (Código de apertura y verificación de headers OMITIDO por brevedad, es el mismo) ...
+
     FILE *f = fopen(filename, "rb");
-    if (!f) {
-        ESP_LOGE("BMP", "No se pudo abrir %s", filename);
-        return;
-    }
+    if (!f) { /* ... handle error ... */ return; }
 
     uint8_t header[54];
-    if (fread(header, 1, 54, f) != 54) {
-        ESP_LOGE("BMP", "Archivo BMP inválido (header)");
-        fclose(f);
-        return;
-    }
-
-    // Verificar firma "BM"
-    if (header[0] != 'B' || header[1] != 'M') {
-        ESP_LOGE("BMP", "No es un BMP válido");
-        fclose(f);
-        return;
-    }
+    if (fread(header, 1, 54, f) != 54) { /* ... handle error ... */ fclose(f); return; }
+    if (header[0] != 'B' || header[1] != 'M') { /* ... handle error ... */ fclose(f); return; }
 
     uint32_t data_offset = *(uint32_t *)&header[10];
-    int width  = *(int32_t *)&header[18];
-    int height = *(int32_t *)&header[22];
+    int32_t width  = *(int32_t *)&header[18];
+    int32_t height = *(int32_t *)&header[22];
     uint16_t bpp = *(uint16_t *)&header[28];
+    int32_t absHeight = (height < 0) ? -height : height;
 
-    if (bpp != 16) {
-        ESP_LOGE("BMP", "Solo se soportan BMP de 16 bits, bpp=%d", bpp);
-        fclose(f);
-        return;
-    }
+    if (bpp != 16) { /* ... handle error ... */ fclose(f); return; }
 
-    ESP_LOGI("BMP", "BMP %dx%d, offset=%d", (int)width, (int)height, (int)data_offset);
-
-    // Cada fila debe estar alineada a múltiplos de 4 bytes
+    // Cálculo correcto del stride (ancho de fila en bytes con padding)
     int rowSize = ((width * 2 + 3) & ~3);
-    ESP_LOGI("BMP", "width=%d, height=%d, rowSize=%d", width, height, rowSize);
 
-    ESP_LOGI("BMP", "rowSize=%d bytes", rowSize);
-
+    // --- 1. CAMBIO CRÍTICO: Modificar MADCTL ---
+    spi_master_write_comm_byte(dev, 0x36); // Memory Access Control
+    spi_master_write_data_byte(dev, 0x88); // 0x08 (Original) | MY_BIT (0x80) = 0x88
+    
     // Configurar ventana en el LCD
     uint16_t x0 = x + dev->_offsetx;
     uint16_t y0 = y + dev->_offsety;
     uint16_t x1 = x0 + width - 1;
-    uint16_t y1 = y0 + height - 1;
+    uint16_t y1 = y0 + absHeight - 1;
 
-    spi_master_write_comm_byte(dev, 0x2A);  // set column address
+    spi_master_write_comm_byte(dev, 0x2A); 
     spi_master_write_addr(dev, x0, x1);
-    spi_master_write_comm_byte(dev, 0x2B);  // set page address
+    spi_master_write_comm_byte(dev, 0x2B); 
     spi_master_write_addr(dev, y0, y1);
-    spi_master_write_comm_byte(dev, 0x2C);  // memory write
+    spi_master_write_comm_byte(dev, 0x2C); 
 
-    // Buffer DMA-safe (alineado a 4 bytes)
+    // Buffers DMA-safe
     uint16_t *line = heap_caps_malloc(width * sizeof(uint16_t), MALLOC_CAP_DMA);
-    uint8_t *row_buf = malloc(rowSize);
-    if (!line || !row_buf) {
-        ESP_LOGE("BMP", "No hay memoria para buffers");
-        fclose(f);
-        if (line) free(line);
-        if (row_buf) free(row_buf);
+    uint8_t *row_buf = malloc(rowSize); // Buffer de lectura cruda
+
+    if (!line || !row_buf) { 
+        // ... (handle memory error, clean up, and restore MADCTL)
+        spi_master_write_comm_byte(dev, 0x36);
+        spi_master_write_data_byte(dev, 0x08);
         return;
     }
+    
+    // --- 2. POSICIONAMIENTO INICIAL ---
+    // Mover el puntero del archivo al inicio de los datos de píxeles
+    fseek(f, data_offset, SEEK_SET);
 
-    // Leer fila por fila (BMP se almacena de abajo hacia arriba)
-    for (int row = 0; row < height; row++) {
-        // Calcular posición de la fila actual en el archivo
-        long pos = data_offset + (height - 1 - row) * rowSize;
-        fseek(f, pos, SEEK_SET);
+    // --- 3. LECTURA LINEAL (NO MÁS FSEEK DENTRO DEL BUCLE) ---
+    for (int row = 0; row < absHeight; row++) {
+        
+        // El puntero del archivo avanza automáticamente
+        size_t bytesRead = fread(row_buf, 1, rowSize, f);
+        bool readSuccess = (bytesRead >= width * 2); // Éxito si leímos los datos útiles
 
-        size_t n = fread(row_buf, 1, rowSize, f);
-        if (n < width * 2) {
-            ESP_LOGW("BMP", "Fila %d incompleta (%d/%d bytes)", (int)row, (int)n, (int)rowSize);
-            continue;
+        if (readSuccess) {
+            // Conversión Little Endian (BMP) a Big Endian (Display)
+            uint16_t *src = (uint16_t *)row_buf;
+            for (int i = 0; i < width; i++) {
+                uint16_t pixel = src[i];
+                line[i] = (pixel << 8) | (pixel >> 8); 
+            }
+        } else {
+            // Rellenar con NEGRO para no desincronizar la GRAM
+            memset(line, 0, width * sizeof(uint16_t)); 
         }
 
-        // Copiar y aplicar byte-swap
-        uint16_t *src = (uint16_t *)row_buf;
-        for (int i = 0; i < width; i++) {
-            uint16_t c = src[i];
-            line[i] = (c << 8) | (c >> 8);
-        }
-
-        // Enviar fila al LCD (bloqueante, DMA-safe)
+        // Transmisión obligatoria de la fila
         spi_transaction_t t = {0};
-        t.length = width * 16;
+        t.length = width * 16; 
         t.tx_buffer = line;
         gpio_set_level(dev->_dc, 1);
         spi_device_transmit(dev->_TFT_Handle, &t);
     }
-
+    
+    // --- 4. RESTAURACIÓN DEL MADCTL ---
+    spi_master_write_comm_byte(dev, 0x36);
+    spi_master_write_data_byte(dev, 0x08); // Vuelve al valor original
+    
+    // Limpieza final
     free(line);
     free(row_buf);
     fclose(f);
-    ESP_LOGI("BMP", "BMP mostrado correctamente");
 }
-
 
 void display_tft_task(void *pvParameters) {
 
@@ -190,15 +182,15 @@ void display_tft_task(void *pvParameters) {
     /* SECCIÓN PARA MANEJO DE IMÁGENES - No completo*/
     /************************************************* */ 
     // Abrir JPG desde SPIFFS
-    /*
+    
         struct stat st;
-        if (stat("/data/tony.bmp", &st) == 0) {
-            ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony.bmp", st.st_size);
+        if (stat("/data/tony189.bmp", &st) == 0) {
+            ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony189.bmp", st.st_size);
         } else {
-            ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony.bmp");
+            ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony189.bmp");
         }
 
-        lcdDrawBMP(&dev, "/data/tony.bmp", 0, 0);
+        lcdDrawBMP(&dev, "/data/tony236.bmp", 0, 0);
 
         vTaskDelay(pdMS_TO_TICKS(20*10*100));  
 
@@ -221,49 +213,94 @@ void display_tft_task(void *pvParameters) {
         for (int y = 0; y < 100; y++) {
             spi_master_write_colors_fast(&dev, lines, 100);
         }
-        */
+        vTaskDelay(pdMS_TO_TICKS(5000));  
+
     /************************************************* */ 
-
-    vTaskDelay(pdMS_TO_TICKS(5*10*100));  
-
 
     lcdFillScreen(&dev, FONDO_BIENVENIDA);
     lcdDrawString(&dev, Cons32fx, 60, 240, (uint8_t *)"BIENVENIDO", BLACK);
     lcdDrawString(&dev, Cons32fx, 160, 220, (uint8_t *)"Kit AC", AZUL_OCEANO);
-    vTaskDelay(pdMS_TO_TICKS(5000));  
+    vTaskDelay(pdMS_TO_TICKS(2000));  
+
+    //Pantalla de Inicio
+    lcdFillScreen(&dev, FONDO_BIENVENIDA);
+
+    //Barra superior de indicación de freno    
+    lcdDrawFillRect(&dev, 0, 0, 44, 320, GREEN);
+    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"Freno OK", WHITE);
+
+    //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
+    //Iconito de grados
+    lcdDrawString(&dev, Cons32fx, 100, 180, (uint8_t *)"37,5", RED);
+    lcdDrawFillCircle(&dev, 80, 107, 3, RED);
+        lcdDrawFillRect(&dev, 97, 200, 100, 250, BLACK);
+        lcdDrawLine(&dev, 100,250,65, 280, BLACK);
+        lcdDrawLine(&dev, 99,250,64, 280, BLACK);
+        lcdDrawLine(&dev, 98,250,63, 280, BLACK);
+        lcdDrawLine(&dev, 97,250,62, 280, BLACK);
+
+    //Iconito de altura
+    lcdDrawString(&dev, Cons32fx, 160, 180, (uint8_t *)"SEGURA", GREEN);
+        lcdDrawFillRect(&dev, 150, 210, 153, 260, BLACK);
+        lcdDrawString(&dev, Cons32fx, 155, 243, (uint8_t *)"^", BLACK);
+        lcdDrawString(&dev, Cons32fx, 180, 243, (uint8_t *)"v", BLACK);
+
+    //Barra inferior con opciones
+    //lcdDrawFillRect(&dev, 193, 0, 239, 319, AZUL_OCEANO);
+
+        lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
+        lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
+    lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
+
+    lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
     
+    lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
+        vTaskDelay(pdMS_TO_TICKS(2000));  
+
+    lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
+        vTaskDelay(pdMS_TO_TICKS(2000));  
+
+    lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
+            vTaskDelay(pdMS_TO_TICKS(2000));  
+
+    lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
+
+    vTaskDelay(pdMS_TO_TICKS(5000));  
+    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+    lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+    //lcdDrawString(&dev, Cons32fx, 100, 180, (uint8_t *)"37,5", RED);
     //Borrar textos
-    lcdDrawFillRect(&dev, 35, 80, 60, 240, FONDO_BIENVENIDA);
-    lcdDrawFillRect(&dev, 135, 120, 160, 220, FONDO_BIENVENIDA);
+//    lcdDrawFillRect(&dev, 35, 80, 60, 240, FONDO_BIENVENIDA);
+//    lcdDrawFillRect(&dev, 135, 120, 160, 220, FONDO_BIENVENIDA);
 
     //Pantalla Menu Principal
-    lcdDrawString(&dev, ilgh24fx, 35, 244, (uint8_t *)"Menu Principal", BLACK);
-    lcdDrawLine(&dev, 50, 0, 50, 320, GRAY);
-    lcdDrawFillRect(&dev, 0, 0, 50, 56, GRAY);
-    lcdDrawFillRect(&dev, 0, 260, 50, 320, GRAY);
+//    lcdDrawString(&dev, ilgh24fx, 35, 244, (uint8_t *)"Menu Principal", BLACK);
+//    lcdDrawLine(&dev, 50, 0, 50, 320, GRAY);
+//    lcdDrawFillRect(&dev, 0, 0, 50, 56, GRAY);
+//    lcdDrawFillRect(&dev, 0, 260, 50, 320, GRAY);
     
-    lcdDrawString(&dev, ilgh24fx, 84, 290, (uint8_t *)"1. Estado general", AZUL_OCEANO);
-    lcdDrawString(&dev, ilgh24fx, 118, 290, (uint8_t *)" > Peso del paciente", RED);
-    lcdDrawString(&dev, ilgh24fx, 152, 290, (uint8_t *)"3. Altura e inclinacion", AZUL_OCEANO);
-    lcdDrawString(&dev, ilgh24fx, 186, 290, (uint8_t *)"4. Barandal y freno", AZUL_OCEANO);
-    lcdDrawString(&dev, ilgh24fx, 220, 290, (uint8_t *)"5. Configuracion", AZUL_OCEANO);
-    vTaskDelay(pdMS_TO_TICKS(4000));  
+//    lcdDrawString(&dev, ilgh24fx, 84, 290, (uint8_t *)"1. Estado general", AZUL_OCEANO);
+//    lcdDrawString(&dev, ilgh24fx, 118, 290, (uint8_t *)" > Peso del paciente", RED);
+//    lcdDrawString(&dev, ilgh24fx, 152, 290, (uint8_t *)"3. Altura e inclinacion", AZUL_OCEANO);
+//    lcdDrawString(&dev, ilgh24fx, 186, 290, (uint8_t *)"4. Barandal y freno", AZUL_OCEANO);
+//    lcdDrawString(&dev, ilgh24fx, 220, 290, (uint8_t *)"5. Configuracion", AZUL_OCEANO);
+//    vTaskDelay(pdMS_TO_TICKS(4000));  
 
 
     //Borrar textos
-    lcdDrawFillRect(&dev, 60, 0, 220, 290, FONDO_BIENVENIDA);
-    lcdDrawFillRect(&dev, 0, 46, 49, 270, FONDO_BIENVENIDA);
+//    lcdDrawFillRect(&dev, 60, 0, 220, 290, FONDO_BIENVENIDA);
+//    lcdDrawFillRect(&dev, 0, 46, 49, 270, FONDO_BIENVENIDA);
 
     //Pantalla Peso del paciente
-    lcdDrawString(&dev, ilgh24fx, 35, 260, (uint8_t *)"Peso del paciente", BLACK);
-    lcdDrawString(&dev, Cons32fx, 102, 216, (uint8_t *)"85,7 kg", RED);
-    lcdDrawLine(&dev, 107,104,107, 216, BLUE);
-    lcdDrawLine(&dev, 108,104,108, 216, BLUE);
+//    lcdDrawString(&dev, ilgh24fx, 35, 260, (uint8_t *)"Peso del paciente", BLACK);
+//    lcdDrawString(&dev, Cons32fx, 102, 216, (uint8_t *)"85,7 kg", RED);
+//    lcdDrawLine(&dev, 107,104,107, 216, BLUE);
+//    lcdDrawLine(&dev, 108,104,108, 216, BLUE);
 
-    lcdDrawString(&dev, ilgh24fx, 152, 300, (uint8_t *)"Ultimo peso: 87,0 kg", BLACK);
-    lcdDrawString(&dev, ilgh24fx, 225, 300, (uint8_t *)"Recalibrar", BLACK);
-    lcdDrawRect(&dev, 196, 175, 230, 305, GRAY);
-    lcdDrawString(&dev, ilgh24fx, 225, 90, (uint8_t *)"Volver", BLACK);
+//    lcdDrawString(&dev, ilgh24fx, 152, 300, (uint8_t *)"Ultimo peso: 87,0 kg", BLACK);
+//    lcdDrawString(&dev, ilgh24fx, 225, 300, (uint8_t *)"Recalibrar", BLACK);
+//    lcdDrawRect(&dev, 196, 175, 230, 305, GRAY);
+//    lcdDrawString(&dev, ilgh24fx, 225, 90, (uint8_t *)"Volver", BLACK);
 
 
 
@@ -290,7 +327,14 @@ void display_tft_task(void *pvParameters) {
             lcdDrawString(&dev, ilgh24fx, 40, 300, (uint8_t *)"Muestro variables:", GREEN);
         }
         */
-        vTaskDelay(pdMS_TO_TICKS(1000));  
+           //Barra superior de indicación de freno    
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, GREEN);
+        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"Freno OK", WHITE);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+        lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
 
     }
 

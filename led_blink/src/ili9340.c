@@ -208,7 +208,7 @@ void spi_master_init(TFT_t * dev, int16_t TFT_MOSI, int16_t TFT_SCLK, int16_t TF
 		.miso_io_num = -1,
 		.quadwp_io_num = -1,
 		.quadhd_io_num = -1,
-		.max_transfer_sz = 4096
+		.max_transfer_sz = 320 * 2 + 8 //Maximum transfer size for one line (320px) plus some margin
 	};
 #endif
 
