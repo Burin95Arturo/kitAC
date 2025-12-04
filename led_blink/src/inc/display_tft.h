@@ -29,5 +29,7 @@ void display_tft_task(void *pvParameters);
 
 //Colores para las pantallas
 #define FONDO_BIENVENIDA    rgb565(255,   245,   235) // #fffbe8
-#define AZUL_OCEANO     rgb565(1,   2,   15) // #090978
+#define AZUL_OCEANO     rgb565(1,   15,   55) // #090978
 #define VERDE_OSCURO     rgb565(0,   50,   15) // #00ca3a
+#define VERDE_TEMA       rgb565(139, 250, 175) // #8BFAAF
+#define CELESTITO       rgb565(189, 215, 238) // #8BFAAF

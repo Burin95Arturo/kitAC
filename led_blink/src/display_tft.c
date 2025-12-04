@@ -46,7 +46,10 @@ void init_spiffs(char * path) {
 }
 
 // Mostrar imagen BMP 16-bit (RGB565) - Optimizado con MADCTL
-void lcdDrawBMP(TFT_t *dev, const char *filename, uint16_t x, uint16_t y)
+//Para el display en horizontal, el offset es así:
+//X = Vertical
+//Y = Horizontal
+void lcdDrawBMP(TFT_t *dev, const char *filename, uint16_t y, uint16_t x)
 {
     // ... (Código de apertura y verificación de headers OMITIDO por brevedad, es el mismo) ...
 
@@ -151,8 +154,8 @@ void display_tft_task(void *pvParameters) {
     InitFontx(Cons32fx, "/data/Cons32.FNT", "");
     //Recordar que cada vez que se cargue una fuente nueva, hay que grabarla en memoria: pio run -t uploadfs
 
-    uint16_t contador = 2;
-    char string_contador[5];
+    uint16_t angulo = 37;
+    char string_angulo[4];
 
     uint16_t model = 0x9341; //ILI9341
     ESP_LOGI("TFT", "Disabling Touch Contoller");
@@ -179,128 +182,99 @@ void display_tft_task(void *pvParameters) {
     //Necesario para las fuentes e imágenes desde SPIFFS
     init_spiffs("/data");
     
-    /* SECCIÓN PARA MANEJO DE IMÁGENES - No completo*/
+    /* SECCIÓN PARA MANEJO DE IMÁGENES */
     /************************************************* */ 
     // Abrir JPG desde SPIFFS
     
+        //Testeo de integridad del archivo
+        /*
         struct stat st;
         if (stat("/data/tony189.bmp", &st) == 0) {
             ESP_LOGI("FILE", "Tamaño del archivo %s: %ld bytes", "/data/tony189.bmp", st.st_size);
         } else {
             ESP_LOGE("FILE", "No se puede acceder al archivo %s", "/data/tony189.bmp");
         }
+        */
 
-        lcdDrawBMP(&dev, "/data/tony.bmp", 0, 0);
+    lcdDrawBMP(&dev, "/data/kitac_logo.bmp", 99, 30);
+    lcdDrawBMP(&dev, "/data/utn_logo.bmp", 228, 207);
 
-        vTaskDelay(pdMS_TO_TICKS(20*10*100));  
+    vTaskDelay(pdMS_TO_TICKS(3000));  
 
-        lcdDrawFillRect(&dev, 0, 0, 238, 319, RED);
-        vTaskDelay(pdMS_TO_TICKS(5*10*100));  
+    lcdFillScreen(&dev, WHITE);
 
+        //Testeo de dibujo rápido con DMA
+            /*// Dibujar un rectángulo rojo 100x100 manualmente
+            uint16_t lines[100];
 
-        // Dibujar un rectángulo rojo 100x100 manualmente
-        uint16_t lines[100];
+            // Rellenar línea roja (byte-swapped)
+            for (int i = 0; i < 100; i++) {
+                uint16_t c = YELLOW;
+                lines[i] = (c << 8) | (c >> 8);   // 🔄 swap bytes
+            }
 
-        // Rellenar línea roja (byte-swapped)
-        for (int i = 0; i < 100; i++) {
-            uint16_t c = YELLOW;
-            lines[i] = (c << 8) | (c >> 8);   // 🔄 swap bytes
-        }
+            lcdSetWindow(&dev, 0, 0, 99, 99);
+            spi_master_write_comm_byte(&dev, 0x2C);
 
-        lcdSetWindow(&dev, 0, 0, 99, 99);
-        spi_master_write_comm_byte(&dev, 0x2C);
-
-        for (int y = 0; y < 100; y++) {
-            spi_master_write_colors_fast(&dev, lines, 100);
-        }
-        vTaskDelay(pdMS_TO_TICKS(5000));  
+            for (int y = 0; y < 100; y++) {
+                spi_master_write_colors_fast(&dev, lines, 100);
+            }
+            vTaskDelay(pdMS_TO_TICKS(1000));  
+            */
 
     /************************************************* */ 
 
-    lcdFillScreen(&dev, FONDO_BIENVENIDA);
-    lcdDrawString(&dev, Cons32fx, 60, 240, (uint8_t *)"BIENVENIDO", BLACK);
-    lcdDrawString(&dev, Cons32fx, 160, 220, (uint8_t *)"Kit AC", AZUL_OCEANO);
-    vTaskDelay(pdMS_TO_TICKS(2000));  
+    //Pantalla Inicial
+        //Barra superior de indicación de freno    
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
 
-    //Pantalla de Inicio
-    lcdFillScreen(&dev, FONDO_BIENVENIDA);
+        //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
+        //Iconito de grados
+        lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", AZUL_OCEANO);
+        lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
+            lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
 
-    //Barra superior de indicación de freno    
-    lcdDrawFillRect(&dev, 0, 0, 44, 320, GREEN);
-    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"Freno OK", WHITE);
-
-    //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
-    //Iconito de grados
-    lcdDrawString(&dev, Cons32fx, 100, 180, (uint8_t *)"37,5", RED);
-    lcdDrawFillCircle(&dev, 80, 107, 3, RED);
-        lcdDrawFillRect(&dev, 97, 200, 100, 250, BLACK);
-        lcdDrawLine(&dev, 100,250,65, 280, BLACK);
-        lcdDrawLine(&dev, 99,250,64, 280, BLACK);
-        lcdDrawLine(&dev, 98,250,63, 280, BLACK);
-        lcdDrawLine(&dev, 97,250,62, 280, BLACK);
-
-    //Iconito de altura
-    lcdDrawString(&dev, Cons32fx, 160, 180, (uint8_t *)"SEGURA", GREEN);
-        lcdDrawFillRect(&dev, 150, 210, 153, 260, BLACK);
-        lcdDrawString(&dev, Cons32fx, 155, 243, (uint8_t *)"^", BLACK);
-        lcdDrawString(&dev, Cons32fx, 180, 243, (uint8_t *)"v", BLACK);
-
-    //Barra inferior con opciones
-    //lcdDrawFillRect(&dev, 193, 0, 239, 319, AZUL_OCEANO);
-
-        lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
-        lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
-    lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
-
-    lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
-    
-    lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
-        vTaskDelay(pdMS_TO_TICKS(2000));  
-
-    lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
-        vTaskDelay(pdMS_TO_TICKS(2000));  
-
-    lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
-            vTaskDelay(pdMS_TO_TICKS(2000));  
-
-    lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
-
-    vTaskDelay(pdMS_TO_TICKS(5000));  
-    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
-    lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
-    //lcdDrawString(&dev, Cons32fx, 100, 180, (uint8_t *)"37,5", RED);
-    //Borrar textos
-//    lcdDrawFillRect(&dev, 35, 80, 60, 240, FONDO_BIENVENIDA);
-//    lcdDrawFillRect(&dev, 135, 120, 160, 220, FONDO_BIENVENIDA);
-
-    //Pantalla Menu Principal
-//    lcdDrawString(&dev, ilgh24fx, 35, 244, (uint8_t *)"Menu Principal", BLACK);
-//    lcdDrawLine(&dev, 50, 0, 50, 320, GRAY);
-//    lcdDrawFillRect(&dev, 0, 0, 50, 56, GRAY);
-//    lcdDrawFillRect(&dev, 0, 260, 50, 320, GRAY);
-    
-//    lcdDrawString(&dev, ilgh24fx, 84, 290, (uint8_t *)"1. Estado general", AZUL_OCEANO);
-//    lcdDrawString(&dev, ilgh24fx, 118, 290, (uint8_t *)" > Peso del paciente", RED);
-//    lcdDrawString(&dev, ilgh24fx, 152, 290, (uint8_t *)"3. Altura e inclinacion", AZUL_OCEANO);
-//    lcdDrawString(&dev, ilgh24fx, 186, 290, (uint8_t *)"4. Barandal y freno", AZUL_OCEANO);
-//    lcdDrawString(&dev, ilgh24fx, 220, 290, (uint8_t *)"5. Configuracion", AZUL_OCEANO);
-//    vTaskDelay(pdMS_TO_TICKS(4000));  
+        //Iconito de altura
+        lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+        lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
+            lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
+            lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
 
 
-    //Borrar textos
-//    lcdDrawFillRect(&dev, 60, 0, 220, 290, FONDO_BIENVENIDA);
-//    lcdDrawFillRect(&dev, 0, 46, 49, 270, FONDO_BIENVENIDA);
+        //Barra inferior con opciones
+        lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
 
-    //Pantalla Peso del paciente
-//    lcdDrawString(&dev, ilgh24fx, 35, 260, (uint8_t *)"Peso del paciente", BLACK);
-//    lcdDrawString(&dev, Cons32fx, 102, 216, (uint8_t *)"85,7 kg", RED);
-//    lcdDrawLine(&dev, 107,104,107, 216, BLUE);
-//    lcdDrawLine(&dev, 108,104,108, 216, BLUE);
+            lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
+            lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
+        lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
 
-//    lcdDrawString(&dev, ilgh24fx, 152, 300, (uint8_t *)"Ultimo peso: 87,0 kg", BLACK);
-//    lcdDrawString(&dev, ilgh24fx, 225, 300, (uint8_t *)"Recalibrar", BLACK);
-//    lcdDrawRect(&dev, 196, 175, 230, 305, GRAY);
-//    lcdDrawString(&dev, ilgh24fx, 225, 90, (uint8_t *)"Volver", BLACK);
+        lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
+        
+        lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
+        lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
+        lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
+
+        lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
+
+        vTaskDelay(pdMS_TO_TICKS(5000));  
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+        lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+   
+    //Mover variables
+    lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", WHITE);
+    sprintf(string_angulo, "%d", angulo);   
+
+    for(angulo=37; angulo<86; angulo++) {
+        lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);  
+        sprintf(string_angulo, "%d", angulo);   
+        lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);    
+        vTaskDelay(pdMS_TO_TICKS(250));  
+
+    }
 
 
 
@@ -328,8 +302,8 @@ void display_tft_task(void *pvParameters) {
         }
         */
            //Barra superior de indicación de freno    
-        lcdDrawFillRect(&dev, 0, 0, 44, 320, GREEN);
-        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"Freno OK", WHITE);
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
         vTaskDelay(pdMS_TO_TICKS(5000));
         lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
         lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
