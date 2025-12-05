@@ -154,8 +154,26 @@ void display_tft_task(void *pvParameters) {
     InitFontx(Cons32fx, "/data/Cons32.FNT", "");
     //Recordar que cada vez que se cargue una fuente nueva, hay que grabarla en memoria: pio run -t uploadfs
 
-    uint16_t angulo = 37;
+    uint8_t angulo = 37;
+    uint8_t angulo_prev=37;
     char string_angulo[4];
+
+    float peso = 55.5;
+    float peso_prev = 55.5;
+    char string_peso[8]; //Espacio para poder poner "-100.00" + NULL
+
+    bool barandales_arriba = true;
+    bool barandales_arriba_prev = true;
+    char string_barandales[7];
+
+    bool freno_ok = true;
+    bool freno_ok_prev = true;
+    char string_freno[4];
+
+    uint8_t teclado_num = 1;
+    uint8_t teclado_num_prev = 1;
+    char string_teclado[4];
+
 
     uint16_t model = 0x9341; //ILI9341
     ESP_LOGI("TFT", "Disabling Touch Contoller");
@@ -224,7 +242,7 @@ void display_tft_task(void *pvParameters) {
 
     /************************************************* */ 
 
-    //Pantalla Inicial
+    //--------Pantalla Inicial--------//
         //Barra superior de indicación de freno    
         lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
         lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
@@ -268,14 +286,66 @@ void display_tft_task(void *pvParameters) {
     lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", WHITE);
     sprintf(string_angulo, "%d", angulo);   
 
-    for(angulo=37; angulo<86; angulo++) {
+    for(angulo=37; angulo<76; angulo++) {
         lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);  
         sprintf(string_angulo, "%d", angulo);   
         lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);    
-        vTaskDelay(pdMS_TO_TICKS(250));  
+        vTaskDelay(pdMS_TO_TICKS(200));  
 
     }
 
+    
+    //--------Pantalla TESTS--------//
+        lcdDrawFillRect(&dev, 45, 0, 195, 319, WHITE);
+        //lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
+        lcdDrawBMP(&dev, "/data/tonito.bmp", 244, 107);
+
+
+
+        //Barra superior con título 
+        lcdDrawFillRect(&dev, 0, 0, 44, 320, CELESTITO);
+        lcdDrawString(&dev, ilgh24fx, 34, 200, (uint8_t *)"TESTS", WHITE);
+
+        //INCLINACIÓN
+        lcdDrawString(&dev, ilgh24fx, 70, 295, (uint8_t *)"INCLINACION:", AZUL_OCEANO);
+        sprintf(string_angulo, "%d", angulo);
+        lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, AZUL_OCEANO);
+        lcdDrawFillCircle(&dev, 53, 112, 3, AZUL_OCEANO);
+
+        //BALANZA
+        lcdDrawString(&dev, ilgh24fx, 100, 295, (uint8_t *)"BALANZA:", AZUL_OCEANO);
+        sprintf(string_peso, "%.2f", peso);
+        lcdDrawString(&dev, Cons32fx, 102, 185, (uint8_t *)&string_peso, VERDE_OSCURO);
+        lcdDrawString(&dev, ilgh24fx, 100, 103, (uint8_t *)"kg", VERDE_OSCURO);
+
+
+        //BARANDALES
+        lcdDrawString(&dev, ilgh24fx, 130, 295, (uint8_t *)"BARANDALES:", AZUL_OCEANO);
+        if (barandales_arriba) {
+            strcpy(string_barandales, "ARRIBA");
+            lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, GREEN);
+        } else {
+            strcpy(string_barandales, "ABAJO");
+            lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, RED);
+        }
+
+        //FRENO
+        lcdDrawString(&dev, ilgh24fx, 160, 295, (uint8_t *)"FRENO:", AZUL_OCEANO);
+        if (freno_ok) {
+            strcpy(string_freno, "OK");
+            lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, GREEN);
+        } else {
+            strcpy(string_freno, "NO");
+            lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, RED);
+        }
+
+        //TECLADO
+        lcdDrawString(&dev, ilgh24fx, 190, 295, (uint8_t *)"TECLADO:", AZUL_OCEANO);
+        sprintf(string_teclado, "%d", teclado_num);
+        lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
+
+
+        vTaskDelay(pdMS_TO_TICKS(5000));
 
 
     while (1) {
@@ -286,8 +356,6 @@ void display_tft_task(void *pvParameters) {
          //   ESP_LOGI("TFT_TASK", "Datos recibidos: %d", received_data);
             // Aquí puedes actualizar la pantalla TFT según los datos recibidos
         //}   
-
-        
         
         /*    
         lcdDrawFillRect(&dev, 55, 240, 75, 300, WHITE);
@@ -301,14 +369,75 @@ void display_tft_task(void *pvParameters) {
             lcdDrawString(&dev, ilgh24fx, 40, 300, (uint8_t *)"Muestro variables:", GREEN);
         }
         */
-           //Barra superior de indicación de freno    
-        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
-        lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
-        vTaskDelay(pdMS_TO_TICKS(5000));
 
+        for (int8_t i = 0; i<76; i++) {
+
+            
+            
+
+            //INCLINACIÓN
+            angulo = i;
+            if (angulo != angulo_prev) {
+                lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, WHITE);
+                sprintf(string_angulo, "%d", angulo);
+                lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                angulo_prev = angulo;
+            }
+
+
+            //BALANZA
+            if (i%3) {
+                peso = peso + 0.5;
+                lcdDrawFillRect(&dev, 77,106,96,184, WHITE);
+                sprintf(string_peso, "%.2f", peso);
+                lcdDrawString(&dev, Cons32fx, 102, 185, (uint8_t *)&string_peso, VERDE_OSCURO);
+            }
+
+            //BARANDALES
+            if (i%12 == 0)
+                barandales_arriba = !barandales_arriba;
+            if (barandales_arriba != barandales_arriba_prev) {
+                lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, WHITE);
+                if (barandales_arriba) {
+                    strcpy(string_barandales, "ARRIBA");
+                    lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, GREEN);
+                } else {
+                    strcpy(string_barandales, "ABAJO");
+                    lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, RED);
+                }
+                barandales_arriba_prev = barandales_arriba;
+            }
+
+            //FRENO
+            freno_ok = (i>45 && i<60) ? true : false;
+            if (freno_ok != freno_ok_prev) {
+                lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, WHITE);
+                if (freno_ok) {
+                    strcpy(string_freno, "OK");
+                    lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, GREEN);
+                } else {
+                    strcpy(string_freno, "NO");
+                    lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, RED);
+                }
+                freno_ok_prev = freno_ok;
+            }
+
+            //TECLADO
+            if ((i+1) % 20 == 0)
+                teclado_num++;
+
+            if (teclado_num != teclado_num_prev) {
+                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, WHITE);
+                sprintf(string_teclado, "%d", teclado_num);
+                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
+                teclado_num_prev = teclado_num;
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(50));
+
+        }
+        peso = 55.5;
+        teclado_num = 1;
 
     }
 
