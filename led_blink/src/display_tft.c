@@ -174,6 +174,10 @@ void display_tft_task(void *pvParameters) {
     uint8_t teclado_num_prev = 1;
     char string_teclado[4];
 
+    uint8_t altura = 70;
+    uint8_t altura_prev = 33;
+    char string_altura[4];
+
 
     uint16_t model = 0x9341; //ILI9341
     ESP_LOGI("TFT", "Disabling Touch Contoller");
@@ -286,19 +290,19 @@ void display_tft_task(void *pvParameters) {
     lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", WHITE);
     sprintf(string_angulo, "%d", angulo);   
 
+    /*
     for(angulo=37; angulo<76; angulo++) {
         lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);  
         sprintf(string_angulo, "%d", angulo);   
         lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);    
         vTaskDelay(pdMS_TO_TICKS(200));  
 
-    }
+    }*/
 
     
     //--------Pantalla TESTS--------//
-        lcdDrawFillRect(&dev, 45, 0, 195, 319, WHITE);
-        //lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
-        lcdDrawBMP(&dev, "/data/tonito.bmp", 244, 107);
+        lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
+        lcdDrawBMP(&dev, "/data/tonito.bmp", 244, 151);
 
 
 
@@ -344,6 +348,11 @@ void display_tft_task(void *pvParameters) {
         sprintf(string_teclado, "%d", teclado_num);
         lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
 
+        //ALTURA
+        lcdDrawString(&dev, ilgh24fx, 220, 295, (uint8_t *)"ALTURA:", AZUL_OCEANO);
+        sprintf(string_altura, "%d", altura);   
+        lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
+        lcdDrawString(&dev, Cons32fx, 222, 150, (uint8_t *)"cm", BLACK);
 
         vTaskDelay(pdMS_TO_TICKS(5000));
 
@@ -433,11 +442,21 @@ void display_tft_task(void *pvParameters) {
                 teclado_num_prev = teclado_num;
             }
 
+            //ALTURA
+            if( i%4 == 0){
+                altura = altura + 1;
+                lcdDrawFillRect(&dev, 197, 154, 216, 198, WHITE);
+                sprintf(string_altura, "%d", altura);   
+                lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
+                altura_prev = altura;
+            }
+
             vTaskDelay(pdMS_TO_TICKS(50));
 
         }
         peso = 55.5;
         teclado_num = 1;
+        altura = 70;
 
     }
 
