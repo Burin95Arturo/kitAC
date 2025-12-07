@@ -7,6 +7,14 @@
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "span": "c"
+        "span": "c",
+        "ili9340.h": "c",
+        "display_tft.h": "c",
+        "decode_image.h": "c",
+        "esp_rom_caps.h": "c",
+        "ets_sys.h": "c",
+        "task.h": "c",
+        "compare": "c",
+        "cstdint": "c"
     }
 }

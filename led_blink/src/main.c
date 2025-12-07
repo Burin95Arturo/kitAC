@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"        // Incluye el header de GPIO de ESP-IDF
+#include "driver/spi_master.h"
 #include "inc/pinout.h"
 #include "esp_log.h"
 #include "driver/i2c.h"
@@ -12,6 +13,7 @@
 #include "inc/balanza.h"
 #include "inc/buttons.h"
 #include "inc/display_lcd.h"
+#include "inc/display_tft.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
 #include "inc/inclinacion.h"
@@ -54,9 +56,12 @@ void task_blink(void *pvParameters) {
 void user_init(void) {
     gpio_config_t io_conf;
 
+    /*DESCOMENTAR INICIALIZACIÓN DE PINES*/
+
+    /*
     // --- Configuración de Pines de SALIDA ---
     // (LED, TRIG, HX711_PD_SCK)
-    io_conf.intr_type = GPIO_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // NUNCA pull-up/down en salidas
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // NUNCA pull-up/down en salidas
@@ -133,7 +138,9 @@ void user_init(void) {
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // ¡DESHABILITADO!
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // ¡DESHABILITADO!
     gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
+    ESP_LOGI(TAG, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
+    */
+    //descomentar hasta aqui
 
     // Crear el semáforo binario para acelerómetro
     task_test_semaphore = xSemaphoreCreateBinary();
@@ -204,6 +211,7 @@ void user_init(void) {
     }
 
     // Inicializacion de tareas
+<<<<<<< HEAD
 
     xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
@@ -231,6 +239,35 @@ void user_init(void) {
     i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
 }
 
+=======
+    
+    //Descomentar estas
+    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    
+    //estas dejar comentadas
+    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
+
+    //descomentar estas
+    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
+    xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
+
+}
+// void app_main(void)
+// {
+//     user_init();
+
+//     while(true)
+//     {
+//         // vTaskDelay(portTICK_PERIOD_MS); // Evita el watchdog
+//         // vTaskDelay(pdMS_TO_TICKS(1000));
+//     }
+// }
+
+>>>>>>> display
 void app_main(void)
 {
     esp_log_level_set(TAG_MAIN, ESP_LOG_INFO);
