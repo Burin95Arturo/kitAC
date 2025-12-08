@@ -103,17 +103,17 @@ void central_task(void *pvParameters) {
         else if (flag_balanza && !first_flag_balanza) {
             display_data.state = peso_change ? CHANGE : NO_CHANGE;
             peso_change = false;
-            if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+            /*if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                 printf("No se pudo enviar el peso a la cola.\n");
-            }
+            }*/
         }
         else if (!flag_cambiar_vista && !flag_balanza) {
             display_data.state = inclinacion_change ? CHANGE : NO_CHANGE;
             inclinacion_change = false;
             display_data.data.origen = SENSOR_ACELEROMETRO;
-            if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+            /*if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                 printf("No se pudo enviar la inclinacion a la cola.\n");
-            }
+            }*/
         }
         else {
             // Ver que se hace cuando se apreta el boton "atras" (o sea, el cambiar la vista)
@@ -121,24 +121,24 @@ void central_task(void *pvParameters) {
                 display_data.state = WARNING;
                 hall_change = false;
                 xSemaphoreGive(buzzer_semaphore);
-                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                /*if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
-                }
+                }*/
             }
             if (ir_change) {
                 display_data.state = WARNING;
                 ir_change = false;
                 xSemaphoreGive(buzzer_semaphore);
-                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                /*if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
-                }
+                }*/
             }
             if (altura_change) {
                 display_data.state = WARNING;
                 altura_change = false;
-                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                /*if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola.\n");
-                }
+                }*/
             }
         }
 

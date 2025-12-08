@@ -15,6 +15,10 @@
         "ets_sys.h": "c",
         "task.h": "c",
         "compare": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "tasktest.h": "c",
+        "central.h": "c",
+        "inclinacion.h": "c",
+        "freertos.h": "c"
     }
 }

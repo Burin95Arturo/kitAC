@@ -33,7 +33,6 @@ typedef enum {
     TEST_TASK,
     BUTTON_EVENT
 } sensor_origen_t;
-
 typedef enum {
     NO_CHANGE=0,
     CHANGE, 
@@ -49,9 +48,18 @@ typedef struct {
     button_event_t button_event;
 } data_t;
 
+typedef enum {
+    BIENVENIDA=0,
+    INICIAL, 
+    BALANZA,
+    TESTS,
+    CONFIGURACION
+} pantallas_t;
+
 typedef struct {
     data_t data;
     states_display_t state;
+    pantallas_t pantalla;
 } display_t;
 
 // static const char *TAG;

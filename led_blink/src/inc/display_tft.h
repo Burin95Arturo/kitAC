@@ -1,6 +1,7 @@
 // Author: Federico Cañete  
 // Date: 09/06/2025
 
+#include "inc/program.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////// Please update the following configuration according to your HardWare spec /////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +24,7 @@
 
 void init_spiffs(char * path);
 void display_tft_task(void *pvParameters);
+void simulation_task(void *pvParameters);
 
 #define DEFAULT_ORIENTATION DIRECTION270 //Para verlo horizontal
 
