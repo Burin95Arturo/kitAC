@@ -20,6 +20,7 @@
 #include "inc/tasktest.h"
 #include "inc/central.h"
 #include "inc/buzzer.h"
+#include "inc/break.h"
 #include <freertos/queue.h>
 
 static const char *TAG_MSJ = "MSJ";
@@ -40,6 +41,7 @@ SemaphoreHandle_t altura_semaphore = NULL;
 SemaphoreHandle_t button_semaphore = NULL;
 SemaphoreHandle_t inclinacion_semaphore = NULL;
 SemaphoreHandle_t buzzer_semaphore = NULL;
+SemaphoreHandle_t break_semaphore = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -200,6 +202,13 @@ void user_init(void) {
         esp_restart();
     }
 
+    break_semaphore = xSemaphoreCreateBinary();
+    if (break_semaphore == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario break_semaphore. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
     if (central_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola central.");
@@ -225,6 +234,7 @@ void user_init(void) {
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
     xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
 
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,

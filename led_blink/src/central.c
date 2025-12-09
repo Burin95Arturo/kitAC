@@ -1,8 +1,6 @@
 #include "inc/central.h"
 
 
-
-
 void calcular_peso(data_t *peso_data) {
     static float vector_peso_1 [MUESTRAS_PROMEDIO] = {0};
     static float vector_peso_2 [MUESTRAS_PROMEDIO] = {0};
@@ -71,6 +69,7 @@ void central_task(void *pvParameters) {
     static display_t display_data;
     static bool hall_change = false;
     static bool ir_change = false;
+    static bool break_change = false;
     static bool altura_change = false;
     static bool peso_change_1 = false;
     static bool peso_change_2 = false;    
@@ -79,7 +78,7 @@ void central_task(void *pvParameters) {
     while (1) {
 
         xSemaphoreGive(button_semaphore);
-        
+        xSemaphoreGive(break_semaphore);
         
         if (!flag_balanza) {
             xSemaphoreGive(ir_semaphore);  
@@ -92,14 +91,15 @@ void central_task(void *pvParameters) {
         
         // Leer de la cola central_queue
         if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {
-            printf("[Central] Origen: %d, Altura: %ld, Peso_1: %.2f, Peso_2: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f\n",
+            printf("[Central] Origen: %d, Altura: %ld, Peso_1: %.2f, Peso_2: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
                 received_data.origen,
                 received_data.altura,
                 received_data.peso_1,
                 received_data.peso_2,
                 received_data.hall_on_off,
                 received_data.ir_on_off,
-                received_data.inclinacion);            
+                received_data.inclinacion,
+                received_data.freno_on_off);            
                         
             switch (received_data.origen)
             {
@@ -116,6 +116,11 @@ void central_task(void *pvParameters) {
                 case SENSOR_IR:
                     ir_change = (received_data.ir_on_off != aux_data.ir_on_off) ? true : false;
                     aux_data.ir_on_off = received_data.ir_on_off;           
+                    break;
+                
+                case SENSOR_FRENO:
+                    break_change = (received_data.freno_on_off != aux_data.freno_on_off) ? true : false;
+                    aux_data.freno_on_off = received_data.freno_on_off;    
                     break;
                 
                 case SENSOR_BALANZA:
@@ -215,6 +220,13 @@ void central_task(void *pvParameters) {
             if (altura_change) {
                 display_data.state = WARNING;
                 altura_change = false;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("No se pudo enviar informacion a la cola display.\n");
+                }
+            }
+            if (break_change) {
+                display_data.state = WARNING;
+                break_change = false;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola display.\n");
                 }
