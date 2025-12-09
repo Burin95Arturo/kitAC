@@ -31,6 +31,7 @@ typedef enum {
     SENSOR_IR,
     SENSOR_BALANZA,
     SENSOR_BALANZA_2,
+    CALCULO_PESO,
     SENSOR_ACELEROMETRO,
     TEST_TASK,
     BUTTON_EVENT
@@ -47,6 +48,7 @@ typedef struct {
     float inclinacion;
     float peso_1;
     float peso_2;
+    float peso_total;
     bool hall_on_off;
     bool ir_on_off;
     button_event_t button_event;

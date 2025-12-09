@@ -9,4 +9,6 @@
 #include "esp_log.h"
 #include "freertos/queue.h"
 
+#define MUESTRAS_PROMEDIO 100
+
 void central_task(void *pvParameters);

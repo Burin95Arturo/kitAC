@@ -26,7 +26,7 @@ static const char *TAG_MSJ = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
 
-#define MAX_LENGHT_QUEUE 10
+#define MAX_LENGHT_QUEUE 50
 
 QueueHandle_t central_queue = NULL;
 QueueHandle_t display_queue = NULL;

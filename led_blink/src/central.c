@@ -1,6 +1,66 @@
 #include "inc/central.h"
 
 
+
+
+void calcular_peso(data_t *peso_data) {
+    static float vector_peso_1 [MUESTRAS_PROMEDIO] = {0};
+    static float vector_peso_2 [MUESTRAS_PROMEDIO] = {0};
+    static int index_1 = 0;
+    static int index_2 = 0;
+    float prom_1 = 0.0f;
+    float prom_2 = 0.0f;
+    bool finish_prom_1 = false;
+    bool finish_prom_2 = false;
+
+    switch (peso_data->origen) {
+        case SENSOR_BALANZA:
+            if (index_1 < MUESTRAS_PROMEDIO) {
+                vector_peso_1[index_1] = peso_data->peso_1;
+                index_1++;
+            }
+            else {
+                // Calcular promedio
+                float suma_1 = 0.0f;
+                for (int i = 0; i < MUESTRAS_PROMEDIO; i++) {
+                    suma_1 += vector_peso_1[i];
+                }
+                prom_1 = suma_1 / MUESTRAS_PROMEDIO;
+                finish_prom_1 = true;
+            }
+            break;
+        
+        case SENSOR_BALANZA_2:
+            if (index_2 < MUESTRAS_PROMEDIO) {
+                vector_peso_2[index_2] = peso_data->peso_2;
+                index_2++;
+            }
+            else {
+                // Calcular promedio
+                float suma_2 = 0.0f;
+                for (int j = 0; j < MUESTRAS_PROMEDIO; j++) {
+                    suma_2 += vector_peso_2[j];
+                }
+                prom_2 = suma_2 / MUESTRAS_PROMEDIO;
+                finish_prom_2 = true;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if (finish_prom_1 && finish_prom_2) {
+        peso_data->peso_total = (prom_1 + prom_2)/2.0f;
+        finish_prom_1 = false;
+        finish_prom_2 = false;
+        index_1 = 0; // Reiniciar índice para la próxima ronda de muestras
+        index_2 = 0; // Reiniciar índice para la próxima ronda de muestras        
+    }
+
+    printf("Calculando peso...\n");
+}
+
 void central_task(void *pvParameters) {
 
     static bool flag_balanza = false;
@@ -12,21 +72,22 @@ void central_task(void *pvParameters) {
     static bool hall_change = false;
     static bool ir_change = false;
     static bool altura_change = false;
-    static bool peso_change = false;
+    static bool peso_change_1 = false;
+    static bool peso_change_2 = false;    
     static bool inclinacion_change = false;
 
     while (1) {
 
         xSemaphoreGive(button_semaphore);
-        xSemaphoreGive(peso_semaphore);
-        xSemaphoreGive(peso_semaphore_2);
-        xSemaphoreGive(hall_semaphore);
-        xSemaphoreGive(altura_semaphore);
-
+        
         
         if (!flag_balanza) {
-//            xSemaphoreGive(ir_semaphore);  
-//            xSemaphoreGive(inclinacion_semaphore);
+            xSemaphoreGive(ir_semaphore);  
+            xSemaphoreGive(inclinacion_semaphore);
+            xSemaphoreGive(peso_semaphore);
+            xSemaphoreGive(peso_semaphore_2);
+            xSemaphoreGive(hall_semaphore);
+            xSemaphoreGive(altura_semaphore);
         }
         
         // Leer de la cola central_queue
@@ -58,19 +119,18 @@ void central_task(void *pvParameters) {
                     break;
                 
                 case SENSOR_BALANZA:
-                    // Procesar peso si es necesario
-                    peso_change = (received_data.peso_1 != aux_data.peso_1) ? true : false;
+                    peso_change_1 = (received_data.peso_1 != aux_data.peso_1) ? true : false;
                     aux_data.peso_1 = received_data.peso_1;
+                    xSemaphoreGive(peso_semaphore);
                     break;
                 
                 case SENSOR_BALANZA_2:
-                    // Procesar peso si es necesario
-                    peso_change = (received_data.peso_2 != aux_data.peso_2) ? true : false;
-                    aux_data.peso_2 = received_data.peso_2;
+                    peso_change_2 = (received_data.peso_2 != aux_data.peso_2) ? true : false;
+                    aux_data.peso_2 = received_data.peso_2;    
+                    xSemaphoreGive(peso_semaphore_2);
                     break;
                 
-                    case SENSOR_ACELEROMETRO:
-                    // Procesar inclinación si es necesario 
+                case SENSOR_ACELEROMETRO:
                     inclinacion_change = (received_data.inclinacion != aux_data.inclinacion) ? true : false;
                     aux_data.inclinacion = received_data.inclinacion;   
                     break;
@@ -89,6 +149,8 @@ void central_task(void *pvParameters) {
                     else if (flag_balanza && received_data.button_event == EVENT_BUTTON_ATRAS) {
                         flag_balanza = false;
                         flag_cambiar_vista = false;
+                        xSemaphoreTake(peso_semaphore, portMAX_DELAY);
+                        xSemaphoreTake(peso_semaphore_2, portMAX_DELAY);
                     }
                     else {
                         flag_cambiar_vista = true;
@@ -104,18 +166,24 @@ void central_task(void *pvParameters) {
         }
 
         // Prendo luz si la baranda esta baja
-        // if (!aux_data.hall_on_off) {
-        //     gpio_set_level(LED_PIN, 1);
-        // } 
+        if (!aux_data.hall_on_off) {
+        //    gpio_set_level(LED_PIN, 1);
+        } 
 
         if (flag_balanza && first_flag_balanza) {
                 first_flag_balanza = false;
             }
         else if (flag_balanza && !first_flag_balanza) {
-            display_data.state = peso_change ? CHANGE : NO_CHANGE;
-            peso_change = false;
-            if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                printf("No se pudo enviar el peso a la cola display.\n");
+            display_data.state = (peso_change_1 ? CHANGE : NO_CHANGE) || (peso_change_2 ? CHANGE : NO_CHANGE);
+            peso_change_1 = false;
+            peso_change_2 = false;
+            calcular_peso(&display_data.data);
+            if (display_data.data.origen == CALCULO_PESO) {
+                // Enviar el peso calculado a la cola
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("No se pudo enviar el peso a la cola display.\n");
+                }
+                printf("Peso total calculado: %.2f kg\n", display_data.data.peso_total);
             }
         }
         else if (!flag_cambiar_vista && !flag_balanza) {

@@ -5,7 +5,7 @@ void inclinacion_task(void *pvParameters) {
 	
     _aceleracion_type aceleraciones;
 	float angulo_x;
-	float angulo_y;
+	// float angulo_y;
 
 
 	/* Buffer de escritura */
@@ -38,7 +38,7 @@ void inclinacion_task(void *pvParameters) {
 	
             MPU_ReadAcceleration(&aceleraciones);
 
-            angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
+            // angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
 
             angulo_x=atan(aceleraciones.A_Y/sqrt(pow(aceleraciones.A_X,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
 
