@@ -6,7 +6,7 @@ void tasktest(void *pvParameters) {
     static data_t test;
     test.origen = TEST_TASK;
     test.altura = 123;
-    test.peso = 45.67f;
+    // test.peso = 45.67f;
     test.hall_on_off = true;
     test.ir_on_off = true;
 
@@ -16,7 +16,7 @@ void tasktest(void *pvParameters) {
         if (xSemaphoreTake(task_test_semaphore, portMAX_DELAY) == pdTRUE) {
             
             test.altura += 1;
-            test.peso += 0.1f;
+            // test.peso += 0.1f;
             test.hall_on_off = !test.hall_on_off;
             test.ir_on_off = !test.ir_on_off;
             

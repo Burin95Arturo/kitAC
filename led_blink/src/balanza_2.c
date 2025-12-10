@@ -98,40 +98,36 @@ static long hx711_read_raw(void) {
 void balanza_2_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
-    long current_raw_value = 1;
-    long promedio = 0;
-    long contador_promedio = 0;
-    ESP_LOGI(TAG, "Tarea de lectura y cálculo de peso del HX711 iniciada.");
+    long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
+    
+    int count = 0;
+    data_t peso_data_2;
+
     while (1) {
-         
-        current_raw_value = hx711_read_raw();
-        promedio = current_raw_value + promedio;
-        hx711_2_raw_reading = current_raw_value; // Actualizar variable global (volatile)
-        contador_promedio++;
-        // Calcular el peso en kilogramos usando los valores de calibración
-        // Asegúrate de que SCALE_FACTOR_VALUE seagit  un float para la división.
-        // if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-        //     hx711_weight_kg = ((float)current_raw_value - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
-        // } else {
-        //     hx711_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-        //     ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-        // }
+        if (xSemaphoreTake(peso_semaphore, portMAX_DELAY) == pdTRUE) {
+    
+            current_raw_value = hx711_read_raw();
+            
+            // 1. Almacenar el valor crudo leído.
+            hx711_2_raw_reading = current_raw_value; 
 
-        if(contador_promedio == 10){
-            contador_promedio = 0;
-
-            if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-                hx711_2_weight_kg = ((float)(promedio/10) - (float)ZERO_OFFSET_VALUE) / SCALE_FACTOR_VALUE;
+            // 2. Calcular el peso en kilogramos usando los valores de calibración.
+            if (SCALE_FACTOR_VALUE_2 != 0) { // Evitar división por cero
+                hx711_2_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE_2 ) / SCALE_FACTOR_VALUE_2;
             } else {
-                hx711_2_weight_kg = 0.0f; // Si el factor de escala es cero, el peso es cero o error.
-                ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+                hx711_2_weight_kg = 0.0f;
+    //            ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+                printf("ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.\n");
             }
 
-            ESP_LOGI(TAG, "Lectura cruda HX711: %ld | Peso: %.3f Kg", promedio/10, hx711_2_weight_kg);
-            ESP_LOGI(TAG, "Peso total suma balanzas: %.3f", hx711_2_weight_kg + hx711_weight_kg_public);
-            promedio = 0;
-        }  
-
-        vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 500 ms
+            // Enviar el peso calculado a la cola
+            peso_data_2.origen = SENSOR_BALANZA_2;  
+            peso_data_2.peso_2 = hx711_2_weight_kg;  
+            if (xQueueSend(central_queue, &peso_data_2, (TickType_t)0) != pdPASS) {
+                // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
+                printf("No se pudo enviar el peso a la cola.\n");
+            }           
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

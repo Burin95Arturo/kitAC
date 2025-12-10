@@ -22,25 +22,28 @@
 #include "inc/tasktest.h"
 #include "inc/central.h"
 #include "inc/buzzer.h"
+#include "inc/break.h"
 #include <freertos/queue.h>
 
 static const char *TAG_MSJ = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
 
-#define MAX_LENGHT_QUEUE 10
+#define MAX_LENGHT_QUEUE 50
 
 QueueHandle_t central_queue = NULL;
 QueueHandle_t display_queue = NULL;
 
 SemaphoreHandle_t task_test_semaphore = NULL;
 SemaphoreHandle_t peso_semaphore = NULL;
+SemaphoreHandle_t peso_semaphore_2 = NULL;
 SemaphoreHandle_t hall_semaphore = NULL;
 SemaphoreHandle_t ir_semaphore = NULL;
 SemaphoreHandle_t altura_semaphore = NULL;
 SemaphoreHandle_t button_semaphore = NULL;
 SemaphoreHandle_t inclinacion_semaphore = NULL;
 SemaphoreHandle_t buzzer_semaphore = NULL;
+SemaphoreHandle_t break_semaphore = NULL;
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -155,6 +158,13 @@ void user_init(void) {
         esp_restart();
     }
 
+    peso_semaphore_2 = xSemaphoreCreateBinary();
+    if (peso_semaphore_2 == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario peso_semaphore_2. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     hall_semaphore = xSemaphoreCreateBinary();
     if (hall_semaphore == NULL) {
         ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario hall_semaphore. Reiniciando...");
@@ -197,6 +207,13 @@ void user_init(void) {
         esp_restart();
     }
 
+    break_semaphore = xSemaphoreCreateBinary();
+    if (break_semaphore == NULL) {
+        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario break_semaphore. Reiniciando...");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        esp_restart();
+    }
+
     central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
     if (central_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola central.");
@@ -217,15 +234,16 @@ void user_init(void) {
     xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
-    //xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
+    xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
     xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
+    xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
 
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,

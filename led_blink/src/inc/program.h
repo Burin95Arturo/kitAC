@@ -18,17 +18,22 @@ extern QueueHandle_t display_queue;
 
 extern SemaphoreHandle_t task_test_semaphore; // Semáforo binario para tarea test
 extern SemaphoreHandle_t peso_semaphore; // Semáforo binario para el peso
+extern SemaphoreHandle_t peso_semaphore_2; // Semáforo binario para el peso
 extern SemaphoreHandle_t hall_semaphore; // Semáforo binario para el sensor de efecto hall
 extern SemaphoreHandle_t ir_semaphore; // Semáforo binario para el sensor ir
 extern SemaphoreHandle_t altura_semaphore; // Semáforo binario para el sensor de altura
 extern SemaphoreHandle_t button_semaphore; // Semáforo binario para lo botones
 extern SemaphoreHandle_t inclinacion_semaphore; // Semáforo binario para sensor de inclinación
 extern SemaphoreHandle_t buzzer_semaphore; // Semáforo binario para el buzer
+extern SemaphoreHandle_t break_semaphore; // Semáforo binario para la función de break
 typedef enum {
     SENSOR_ALTURA=0,
     SENSOR_HALL,
     SENSOR_IR,
     SENSOR_BALANZA,
+    SENSOR_BALANZA_2,
+    SENSOR_FRENO,
+    CALCULO_PESO,
     SENSOR_ACELEROMETRO,
     TEST_TASK,
     BUTTON_EVENT
@@ -42,9 +47,12 @@ typedef struct {
     sensor_origen_t origen;
     long altura;
     float inclinacion;
-    float peso;
+    float peso_1;
+    float peso_2;
+    float peso_total;
     bool hall_on_off;
     bool ir_on_off;
+    bool freno_on_off;
     button_event_t button_event;
 } data_t;
 
