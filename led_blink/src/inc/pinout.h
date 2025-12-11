@@ -5,8 +5,8 @@
 // hace que se reinicie el equipo mientras configura.
 
 //Sensor altura
-#define TRIG_PIN            GPIO_NUM_4      // Pin TRIG del HC-SR04
-#define ECHO_PIN            GPIO_NUM_5      // Pin ECHO del HC-SR04
+#define TRIG_PIN            GPIO_NUM_12      // Pin TRIG del HC-SR04
+#define ECHO_PIN            GPIO_NUM_14      // Pin ECHO del HC-SR04
 
 //Led de estado
 #define LED_PIN             GPIO_NUM_2      // Led interno ESP32

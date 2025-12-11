@@ -162,7 +162,7 @@ void user_init(void) {
     }
     
     // Inicializacion de tareas
-    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
