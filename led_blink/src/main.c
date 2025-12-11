@@ -18,6 +18,7 @@
 #include "inc/display_lcd.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
+#include "inc/acelerometro.h"
 #include <freertos/queue.h>
 
 static const char *TAG = "MSJ";
@@ -54,9 +55,9 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG_GPIO, "GPIO %d (LED) configurado como salida.", LED_PIN);
 
-    io_conf.pin_bit_mask = (1ULL << LED_HALL_1);
-    gpio_config(&io_conf);
-    ESP_LOGI(TAG_GPIO, "GPIO %d (LED HALL 1) configurado como salida.", LED_HALL_1);
+    // io_conf.pin_bit_mask = (1ULL << LED_HALL_1);
+    // gpio_config(&io_conf);
+    // ESP_LOGI(TAG_GPIO, "GPIO %d (LED HALL 1) configurado como salida.", LED_HALL_1);
 
     io_conf.pin_bit_mask = (1ULL << TRIG_PIN);
     gpio_config(&io_conf);
@@ -90,11 +91,11 @@ void user_init(void) {
     ESP_LOGI(TAG_GPIO, "GPIO %d (HALL) configurado como entrada (PULL-UP habilitado).", HALL_PIN);
 
     // // IR_PIN (Si es Open-Collector y necesita Pull-Up para estado HIGH)
-    io_conf.pin_bit_mask = (1ULL << IR_PIN);
-    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE; // <-- ¡MUY IMPORTANTE! Si tu sensor es open-collector y requiere pull-up.
-    gpio_config(&io_conf);
-    ESP_LOGI(TAG_GPIO, "GPIO %d (IR) configurado como entrada (PULL-UP habilitado).", IR_PIN);
+    // io_conf.pin_bit_mask = (1ULL << IR_PIN);
+    // io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    // io_conf.pull_up_en = GPIO_PULLUP_ENABLE; // <-- ¡MUY IMPORTANTE! Si tu sensor es open-collector y requiere pull-up.
+    // gpio_config(&io_conf);
+    // ESP_LOGI(TAG_GPIO, "GPIO %d (IR) configurado como entrada (PULL-UP habilitado).", IR_PIN);
 
     // HX711_DOUT_PIN (¡CRÍTICO! Es salida push-pull del HX711, NUNCA habilitar pull-up/down)
     io_conf.pin_bit_mask = (1ULL << HX711_DOUT_PIN);
@@ -165,10 +166,11 @@ void user_init(void) {
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&acelerometro_task, "acelerometro", 4096, NULL, 1, NULL);
 }
 
 void app_main(void)

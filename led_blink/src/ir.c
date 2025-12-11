@@ -14,7 +14,8 @@ static bool getIrSensorState(void);
 
 static bool getIrSensorState(void){
     
-    return gpio_get_level(IR_PIN);
+    // return gpio_get_level(IR_PIN);
+    return 0;
 }
 
 void ir_sensor_task(void *pvParameters) {

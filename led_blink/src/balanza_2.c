@@ -12,8 +12,10 @@
 #include "inc/program.h"
 
 // Se asume que las definiciones de calibración y variables globales son accesibles:
-#define ZERO_OFFSET_VALUE 258794L // Raw value obtenido con balanza sin carga
-#define SCALE_FACTOR_VALUE 7925.3f // (Valor con peso conocido - Raw) / peso conocido
+// #define ZERO_OFFSET_VALUE 258794L // Raw value obtenido con balanza sin carga
+// #define SCALE_FACTOR_VALUE 7925.3f // (Valor con peso conocido - Raw) / peso conocido
+#define ZERO_OFFSET_VALUE 291246L // Raw value obtenido con balanza sin carga
+#define SCALE_FACTOR_VALUE 91443.94f // (Valor con peso conocido - Raw) / peso conocido
 
 volatile long hx711_2_raw_reading = 0;
 volatile float hx711_2_weight_kg = 0.0f;
@@ -132,7 +134,7 @@ void balanza_2_task(void *pvParameters){
         }
         // 2. Calcular el peso en kilogramos usando los valores de calibración.
         if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-            hx711_2_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
+            hx711_2_weight_kg = ( (float)hx711_2_raw_reading - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
         } else {
             hx711_2_weight_kg = 0.0f;
             ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
@@ -157,7 +159,7 @@ void balanza_2_task(void *pvParameters){
         // if (count == 10){
         //     ESP_LOGI(TAG, "Lectura Balanza 2 fijo: %ld | Peso: %.3f Kg", current_raw_value, value);
         // }else{
-            ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", current_raw_value, hx711_2_weight_kg);
+            ESP_LOGI(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", hx711_2_raw_reading, hx711_2_weight_kg);
         //     count ++;
         //     value = hx711_2_weight_kg;
         // }

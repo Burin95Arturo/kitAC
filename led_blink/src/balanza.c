@@ -15,12 +15,14 @@
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
 // Obtén este valor promediando varias lecturas sin carga.
 // #define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga
-#define ZERO_OFFSET_VALUE 693649L // Raw value obtenido con balanza sin carga
+// #define ZERO_OFFSET_VALUE 693649L // Raw value obtenido con balanza sin carga
+#define ZERO_OFFSET_VALUE 685710L // Raw value obtenido con balanza sin carga
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 //#define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
-#define SCALE_FACTOR_VALUE 15349.33f // Se uso una pesa de 4.6Kg y una balanza de presicion
+// #define SCALE_FACTOR_VALUE 15349.33f // Se uso una pesa de 4.6Kg y una balanza de presicion
+#define SCALE_FACTOR_VALUE 15702.83f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 // --- Tag para el logging del ESP-IDF ---
 static const char *TAG = "HX711_DRIVER";
@@ -129,7 +131,7 @@ void balanza_task(void *pvParameters){
     hx711_init();
     long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
     
-    ESP_LOGI(TAG, "Tarea Balanza 2 inicializada...");
+    ESP_LOGI(TAG, "Tarea Balanza 1 inicializada...");
     
     while (1) {
           
@@ -140,14 +142,14 @@ void balanza_task(void *pvParameters){
 
         // 2. Calcular el peso en kilogramos usando los valores de calibración.
         if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
-            hx711_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
+            hx711_weight_kg = ( (float)hx711_raw_reading - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
         } else {
             hx711_weight_kg = 0.0f;
             ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
         }
 
         // 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
-        ESP_LOGI(TAG, "Lectura Balanza 1: %ld | Peso: %.3f Kg", current_raw_value, hx711_weight_kg);
+        ESP_LOGI(TAG, "Lectura Balanza 1: %ld | Peso: %.3f Kg", hx711_raw_reading, hx711_weight_kg);
 
         // 4. Pausar para controlar la frecuencia de lectura.
 

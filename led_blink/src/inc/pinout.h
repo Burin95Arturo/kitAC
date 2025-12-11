@@ -15,30 +15,36 @@
 #define LED_PIN_B             GPIO_NUM_2      // B
 
 //Alarma sonora
-#define ALARM_PIN             GPIO_NUM_2      // Alarma
+#define ALARM_PIN             GPIO_NUM_16      // Alarma
 
 //Sensores de baranda
-#define HALL_PIN            GPIO_NUM_0      // Pin HALL - Sensor hall (baranda derecha cabecera)
-#define HALL_PIN_2            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda cabecera)
-#define HALL_PIN_3            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda derecha piecera)
-#define HALL_PIN_4            GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda piecera)
+#define HALL_PIN            GPIO_NUM_15      // Pin HALL - Sensor hall (baranda derecha cabecera)
+// #define HALL_PIN_2          GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda cabecera)
+// #define HALL_PIN_3          GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda derecha piecera)
+// #define HALL_PIN_4          GPIO_NUM_0      // Pin HALL - Sensor hall (Baranda izquierda piecera)
 
 //IR sensor
-#define IR_PIN              GPIO_NUM_32     // Pin IR
+//#define IR_PIN              GPIO_NUM_32     // Pin IR
 
 //Buttons
-#define BUTTON_UP_PIN       GPIO_NUM_9     // Botón para "Arriba" o "Incrementar"
-#define BUTTON_DOWN_PIN     GPIO_NUM_12     // Botón para "Abajo" o "Disminuir"
-#define BUTTON_SELECT_PIN   GPIO_NUM_14   // Botón para "Seleccionar" o "Confirmar"
-#define BUTTON_BACK_PIN   GPIO_NUM_14   // Botón para "Back" o "Cancel"
+#define BUTTON_UP_PIN       GPIO_NUM_25     // Botón para "Arriba" o "Incrementar"
+#define BUTTON_DOWN_PIN     GPIO_NUM_26     // Botón para "Abajo" o "Disminuir"
+#define BUTTON_SELECT_PIN   GPIO_NUM_27   // Botón para "Seleccionar" o "Confirmar"
+#define BUTTON_BACK_PIN     GPIO_NUM_33   // Botón para "Back" o "Cancel"
 
 //1ra balanza
-#define HX711_DOUT_PIN      GPIO_NUM_18     // Pin de datos (DOUT) del HX711
-#define HX711_PD_SCK_PIN    GPIO_NUM_19     // Pin de reloj (PD_SCK) del HX711
+#define HX711_DOUT_PIN      GPIO_NUM_39     // Pin de datos (DOUT) del HX711
+#define HX711_PD_SCK_PIN    GPIO_NUM_36     // Pin de reloj (PD_SCK) del HX711
 
 //2da balanza 
-#define HX711_2_DOUT_PIN    GPIO_NUM_25     // Pin de datos (DOUT) del HX711 de la 2da balanza
-#define HX711_2_PD_SCK_PIN  GPIO_NUM_26     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
+#define HX711_2_DOUT_PIN    GPIO_NUM_35     // Pin de datos (DOUT) del HX711 de la 2da balanza
+#define HX711_2_PD_SCK_PIN  GPIO_NUM_34     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
+
+//acelerometro MPU6050
+
+#define I2C_MASTER_SCL_IO   GPIO_NUM_22    // Tu pin SCL (GPIO22)
+#define I2C_MASTER_SDA_IO   GPIO_NUM_21    // Tu pin SDA (GPIO21)
+
 
 // --- Definiciones de Pines para el LCD ---
 // ¡AJUSTA ESTOS PINES A TUS CONEXIONES REALES EN EL ESP32!
@@ -51,6 +57,6 @@
 #define LCD_DB6_PIN         GPIO_NUM_16  // Data Bit 6 (DB6)
 #define LCD_DB7_PIN         GPIO_NUM_15   // Data Bit 7 (DB7)
 
-#define LED_HALL_1          GPIO_NUM_21  // LED HALL 1
+//#define LED_HALL_1          GPIO_NUM_21  // LED HALL 1
 
 

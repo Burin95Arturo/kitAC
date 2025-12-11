@@ -20,9 +20,9 @@ static uint8_t getHallSensorState(void);
 static uint8_t getHallSensorState(void){
     contador_barandas = 0;
     contador_barandas += gpio_get_level(HALL_PIN);
-    contador_barandas += gpio_get_level(HALL_PIN_2);
-    contador_barandas += gpio_get_level(HALL_PIN_3);
-    contador_barandas += gpio_get_level(HALL_PIN_4);
+    // contador_barandas += gpio_get_level(HALL_PIN_2);
+    // contador_barandas += gpio_get_level(HALL_PIN_3);
+    // contador_barandas += gpio_get_level(HALL_PIN_4);
     return contador_barandas;
 }
 
@@ -32,7 +32,8 @@ void hall_sensor_task(void *pvParameters) {
     while (1) {
         
         //esp_rom_delay_us(10);
-        hall_state = getHallSensorState();
+        // hall_state = getHallSensorState();
+        hall_state = gpio_get_level(HALL_PIN);
         //gpio_set_level(LED_HALL_1, getHallSensorState());
         ESP_LOGI(TAG, "Estado de barandas: %d", hall_state);
         
