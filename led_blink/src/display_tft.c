@@ -223,12 +223,12 @@ void display_tft_task(void *pvParameters) {
         
             //Según qué pantalla mostrar, actualizar datos
                         
-            /*ESP_LOGI("TFT_TASK", "[Central] Origen: %d, Altura: %ld, Peso: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f\n",
+            /*ESP_LOGI("TFT_TASK", "[Central] Origen: %d, Altura: %ld, Peso: %.2f, HALL_OnOff: %d, Freno: %d, Inclinacion: %f\n",
                 received_data.data.origen,
                 received_data.data.altura,
                 received_data.data.peso,
                 received_data.data.hall_on_off,
-                received_data.data.ir_on_off,
+                received_data.data.freno_on_off,
                 received_data.data.inclinacion);  */ 
             // Aquí puedes actualizar la pantalla TFT según los datos recibidos
         
@@ -291,7 +291,7 @@ void display_tft_task(void *pvParameters) {
                 //BALANZA
                 if (flag_refresh_display_data) {
                     lcdDrawFillRect(&dev, 77,106,96,184, WHITE);
-                    sprintf(string_peso, "%.2f", received_data.data.peso);
+                    sprintf(string_peso, "%.2f", received_data.data.peso_total);
                     lcdDrawString(&dev, Cons32fx, 102, 185, (uint8_t *)&string_peso, VERDE_OSCURO);
                     flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
                 }
@@ -311,7 +311,7 @@ void display_tft_task(void *pvParameters) {
                 }
 
                 //FRENO
-                freno_ok = received_data.data.ir_on_off;
+                freno_ok = received_data.data.freno_on_off;
                 if (freno_ok != freno_ok_prev) {
                     lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, WHITE);
                     if (freno_ok) {
@@ -435,11 +435,11 @@ void simulation_task(void *pvParameters) {
     sent_data.data.origen = TEST_TASK;
     sent_data.pantalla = TESTS;
 
-    sent_data.data.peso = 55.5;
+    sent_data.data.peso_total = 55.5;
     uint16_t teclado_num = 1;
     uint16_t altura = 70;
     sent_data.data.hall_on_off = true;
-    sent_data.data.ir_on_off = false;
+    sent_data.data.freno_on_off = false;
 
 	while(1)
 	{
@@ -452,7 +452,7 @@ void simulation_task(void *pvParameters) {
 
             //BALANZA
             if (i%4) {
-                sent_data.data.peso += 0.5;
+                sent_data.data.peso_total += 0.5;
             }
 
             //BARANDALES
@@ -462,7 +462,7 @@ void simulation_task(void *pvParameters) {
             }
 
             //FRENO
-            sent_data.data.ir_on_off = (i>45 && i<60) ? true : false;
+            sent_data.data.freno_on_off = (i>45 && i<60) ? true : false;
 
             //TECLADO
             if ((i+1) % 20 == 0)
@@ -499,11 +499,11 @@ void simulation_task(void *pvParameters) {
                 printf( "No se pudo enviar datos a display.");
             } 
             /*else {
-                    ESP_LOGI("SIMU", "Enviado: Altura: %ld, Peso: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Boton: %d\n",
+                    ESP_LOGI("SIMU", "Enviado: Altura: %ld, Peso: %.2f, HALL_OnOff: %d, Freno: %d, Inclinacion: %f, Boton: %d\n",
                     sent_data.data.altura,
                     sent_data.data.peso,
                     sent_data.data.hall_on_off,
-                    sent_data.data.ir_on_off,
+                    sent_data.data.freno_on_off,
                     sent_data.data.inclinacion,
                     sent_data.data.button_event);
             }*/
@@ -511,7 +511,7 @@ void simulation_task(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(250)); //Aumentar velocidad sacando el LOGI
 
         }
-        sent_data.data.peso = 55.5;
+        sent_data.data.peso_total = 55.5;
         teclado_num = 1;
         altura = 70;
 
