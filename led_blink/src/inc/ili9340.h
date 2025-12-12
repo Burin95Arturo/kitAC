@@ -5,6 +5,7 @@
 #include "fontx.h"
 
 #define rgb565(r, g, b) (((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3))
+#define rgb565_fixed(r, g, b) (((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3))
 
 #define RED    rgb565(255,   0,   0) // 0xf800
 #define GREEN  rgb565(  0, 255,   0) // 0x07e0

@@ -410,8 +410,51 @@ void display_tft_task(void *pvParameters) {
                 }
                 break;  
 
-                //ACÁ LAS NUEVAS PANTALLAS
-            
+            case BALANZA:
+                /* code */
+                if (pantalla_actual != BALANZA) {
+                    pantalla_actual = BALANZA;
+                    //Dibujar campos pantalla BALANZA//
+                    //--------Campos Pantalla Balanza--------//
+                        lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
+
+                        //Barra superior con texto y botón 
+                        lcdDrawFillRect(&dev, 0, 0, 44, 320, NARANJITA);
+                        lcdDrawString(&dev, ilgh24fx, 34, 306, (uint8_t *)"Para pesar,pulse", BLACK);
+                        lcdDrawFillRect(&dev, 10, 80, 34, 105, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 9, 81, 35, 104, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 33, 97, (uint8_t *)"1", WHITE);
+                        
+                        //Peso actual
+                        lcdDrawBMP(&dev, "/data/pesa.bmp", 32, 60);
+                        lcdDrawString(&dev, Cons32fx, 85, 210, (uint8_t *)"Peso actual:", BLACK);
+                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)"73,4 kg", AZUL_OCEANO);
+
+                        //Último peso
+                        lcdDrawBMP(&dev, "/data/historial.bmp", 40, 140);
+                        lcdDrawString(&dev, ilgh24fx, 160, 200, (uint8_t *)"Ultimo peso:", GRIS);
+                        lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)"72,8 kg", GRIS);
+
+
+
+                        //Barra inferior con opciones
+                        lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
+
+                        lcdDrawFillRect(&dev, 207, 286, 229, 309, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 230, 310, 206, 285, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 303, (uint8_t *)"2", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 278, (uint8_t *)"Guardar", BLACK);
+
+                        lcdDrawFillRect(&dev, 207, 155, 229, 180, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 206, 156, 230, 179, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 172, (uint8_t *)"3", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 149, (uint8_t *)"Cero", BLACK);
+
+
+                }
+                break;
+                
+
             default:
 
                 break;
@@ -435,7 +478,7 @@ void simulation_task(void *pvParameters) {
 	
     display_t sent_data;
     sent_data.data.origen = TEST_TASK;
-    sent_data.pantalla = TESTS;
+    sent_data.pantalla = BALANZA;
 
     sent_data.data.peso_total = 55.5;
     uint16_t teclado_num = 1;

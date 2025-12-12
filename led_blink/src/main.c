@@ -236,7 +236,7 @@ void user_init(void) {
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
     xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
-    xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
+    //DESCOMENTAR //xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
     xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
