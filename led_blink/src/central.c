@@ -79,6 +79,8 @@ void central_task(void *pvParameters) {
 
         xSemaphoreGive(button_semaphore);
         xSemaphoreGive(break_semaphore);
+        xSemaphoreGive(inclinacion_semaphore);
+
         
         if (!flag_balanza) {
             xSemaphoreGive(ir_semaphore);  

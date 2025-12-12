@@ -18,6 +18,17 @@
 #define HX711_2_DOUT_PIN    GPIO_NUM_25     // Pin de datos (DOUT) del HX711 de la 2da balanza
 #define HX711_2_PD_SCK_PIN  GPIO_NUM_26     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
 
+#define PIN_NUM_MISO        19
+#define CONFIG_MOSI_GPIO    23
+#define CONFIG_SCLK_GPIO    18
+#define CONFIG_TFT_CS_GPIO   5
+
+#define CONFIG_DC_GPIO   16 //Data/Command control pin
+#define CONFIG_RESET_GPIO  4 //CAMBIÉ ESTO PARA ADECUARLO A LA PLACA DE ARTUR
+#define CONFIG_BL_GPIO 27
+
+#define LCD_BK_LIGHT_ON_LEVEL   1
+
 //not tested
 
 // --- Definiciones de Pines para el LCD ---

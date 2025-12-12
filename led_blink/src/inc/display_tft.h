@@ -2,22 +2,14 @@
 // Date: 09/06/2025
 
 #include "inc/program.h"
+#include "inc/pinout.h"
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////// Please update the following configuration according to your HardWare spec /////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define LCD_HOST    SPI3_HOST
 #define CONFIG_LCD_TYPE_ILI9341 1
 
-#define PIN_NUM_MISO 19
-#define CONFIG_MOSI_GPIO 23
-#define CONFIG_SCLK_GPIO  18
-#define CONFIG_TFT_CS_GPIO   5
 
-#define CONFIG_DC_GPIO   16 //Data/Command control pin
-#define CONFIG_RESET_GPIO  33
-#define CONFIG_BL_GPIO 27
-
-#define LCD_BK_LIGHT_ON_LEVEL   1
 
 //IMPORTANTE: Se está usando Frame Buffer. Ver ili9340.h
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

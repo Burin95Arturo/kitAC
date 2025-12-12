@@ -226,24 +226,24 @@ void user_init(void) {
     }
 
     // Inicializacion de tareas
+    //Las tabuladas ya estaban comentadas
 
-    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
-    //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
-    //DESCOMENTAR //xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
-    xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+            //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
+    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+            //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
+            //DESCOMENTAR //xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
+    //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
-    xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
 
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,

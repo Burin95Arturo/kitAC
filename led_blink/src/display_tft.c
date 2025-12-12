@@ -450,6 +450,11 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 230, 172, (uint8_t *)"3", WHITE);
                         lcdDrawString(&dev, ilgh24fx, 230, 149, (uint8_t *)"Cero", BLACK);
 
+                        lcdDrawFillRect(&dev, 207, 155, 229, 180, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 206, 156, 230, 179, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 172, (uint8_t *)"3", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 149, (uint8_t *)"Cero", BLACK);
+
 
                 }
                 break;
@@ -478,7 +483,7 @@ void simulation_task(void *pvParameters) {
 	
     display_t sent_data;
     sent_data.data.origen = TEST_TASK;
-    sent_data.pantalla = BALANZA;
+    sent_data.pantalla = TESTS;
 
     sent_data.data.peso_total = 55.5;
     uint16_t teclado_num = 1;
