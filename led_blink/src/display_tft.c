@@ -409,6 +409,8 @@ void display_tft_task(void *pvParameters) {
                 //--------Fin Pantalla Inicial--------//
                 }
                 break;  
+
+                //ACÁ LAS NUEVAS PANTALLAS
             
             default:
 
