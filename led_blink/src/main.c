@@ -15,7 +15,7 @@
 #include "inc/ir.h"
 #include "inc/balanza.h"
 #include "inc/buttons.h"
-#include "inc/display_lcd.h"
+//#include "inc/display_lcd.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
 #include "inc/acelerometro.h"
@@ -33,10 +33,10 @@ QueueHandle_t error_queue = NULL;
 void task_blink(void *pvParameters) {
     while(true) {
         gpio_set_level(LED_PIN, 1);
-        ESP_LOGI(TAG, "LED ON");
+        //ESP_LOGI(TAG, "LED ON");
         vTaskDelay(pdMS_TO_TICKS(500));
         gpio_set_level(LED_PIN, 0);
-        ESP_LOGI(TAG, "LED OFF");
+        //ESP_LOGI(TAG, "LED OFF");
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
@@ -162,15 +162,15 @@ void user_init(void) {
     }
     
     // Inicializacion de tareas
-    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
     xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
     //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&lcd_display_task, "LCD_DisplayTask", 4096, NULL, 5, NULL); // Pila de 4KB
-    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
-    xTaskCreate(&acelerometro_task, "acelerometro", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    //xTaskCreate(&acelerometro_task, "acelerometro", 4096, NULL, 1, NULL);
 }
 
 void app_main(void)

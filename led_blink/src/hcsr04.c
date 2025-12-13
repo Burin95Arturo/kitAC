@@ -60,6 +60,6 @@ void hc_sr04_task(void *pvParameters) {
              //ESP_LOGI("HCSR04", "Altura enviada: %.2f m", current_height_m);
         }
 
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }

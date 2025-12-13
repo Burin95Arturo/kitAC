@@ -148,6 +148,6 @@ void acelerometro_task(void *pvParameters){
                roll, pitch, yaw);
         
         // 3. Esperar un tiempo (100ms) antes de la próxima lectura
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(800));
     }
 }

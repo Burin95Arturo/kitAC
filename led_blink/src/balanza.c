@@ -16,13 +16,13 @@
 // Obtén este valor promediando varias lecturas sin carga.
 // #define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga
 // #define ZERO_OFFSET_VALUE 693649L // Raw value obtenido con balanza sin carga
-#define ZERO_OFFSET_VALUE 685710L // Raw value obtenido con balanza sin carga
+#define ZERO_OFFSET_VALUE 203000L // Raw value obtenido con balanza sin carga
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 //#define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
 // #define SCALE_FACTOR_VALUE 15349.33f // Se uso una pesa de 4.6Kg y una balanza de presicion
-#define SCALE_FACTOR_VALUE 15702.83f // Se uso una pesa de 4.6Kg y una balanza de presicion
+#define SCALE_FACTOR_VALUE 17980.1f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
 // --- Tag para el logging del ESP-IDF ---
 static const char *TAG = "HX711_DRIVER";
@@ -153,6 +153,6 @@ void balanza_task(void *pvParameters){
 
         // 4. Pausar para controlar la frecuencia de lectura.
 
-        vTaskDelay(pdMS_TO_TICKS(500)); 
+        vTaskDelay(pdMS_TO_TICKS(800)); 
     }
 }
