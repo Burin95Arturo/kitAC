@@ -77,32 +77,36 @@ void central_task(void *pvParameters) {
 
     while (1) {
 
-        xSemaphoreGive(button_semaphore);
-        xSemaphoreGive(break_semaphore);
+        //xSemaphoreGive(button_semaphore);
+        //xSemaphoreGive(break_semaphore);
         xSemaphoreGive(inclinacion_semaphore);
 
         
         if (!flag_balanza) {
             xSemaphoreGive(ir_semaphore);  
             xSemaphoreGive(inclinacion_semaphore);
-            xSemaphoreGive(peso_semaphore);
-            xSemaphoreGive(peso_semaphore_2);
             xSemaphoreGive(hall_semaphore);
             xSemaphoreGive(altura_semaphore);
         }
         
         // Leer de la cola central_queue
         if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(100)) == pdPASS) {
-            printf("[Central] Origen: %d, Altura: %ld, Peso_1: %.2f, Peso_2: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
-                received_data.origen,
-                received_data.altura,
-                received_data.peso_1,
-                received_data.peso_2,
-                received_data.hall_on_off,
-                received_data.ir_on_off,
-                received_data.inclinacion,
-                received_data.freno_on_off);            
-                        
+            // printf("[Central] Origen: %d, Altura: %ld, Peso_1: %.2f, Peso_2: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
+            //     received_data.origen,
+            //     received_data.altura,
+            //     received_data.peso_1,
+            //     received_data.peso_2,
+            //     received_data.hall_on_off,
+            //     received_data.ir_on_off,
+            //     received_data.inclinacion,
+            //     received_data.freno_on_off);   
+            
+            received_data.altura = 100;
+            received_data.peso_total = 50.5f;
+            received_data.hall_on_off = 0;
+            received_data.ir_on_off = 1;
+            received_data.freno_on_off = 0;   
+                    
             switch (received_data.origen)
             {
                 case SENSOR_ALTURA:
@@ -138,8 +142,10 @@ void central_task(void *pvParameters) {
                     break;
                 
                 case SENSOR_ACELEROMETRO:
-                    inclinacion_change = (received_data.inclinacion != aux_data.inclinacion) ? true : false;
+                //    inclinacion_change = (received_data.inclinacion != aux_data.inclinacion) ? true : false;
+                    inclinacion_change = true;
                     aux_data.inclinacion = received_data.inclinacion;   
+                    printf("Inclinacion recibida: %f\n", received_data.inclinacion);
                     break;
                 
                 case BUTTON_EVENT:
@@ -193,14 +199,15 @@ void central_task(void *pvParameters) {
                 printf("Peso total calculado: %.2f kg\n", display_data.data.peso_total);
             }
         }
-        else if (!flag_cambiar_vista && !flag_balanza) {
-            display_data.state = inclinacion_change ? CHANGE : NO_CHANGE;
-            inclinacion_change = false;
-            display_data.data.origen = SENSOR_ACELEROMETRO;
-            if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                printf("No se pudo enviar la inclinacion a la cola display.\n");
-            }
-        }
+        // else if (!flag_cambiar_vista && !flag_balanza) {
+        //     display_data.state = inclinacion_change ? CHANGE : NO_CHANGE;
+        //     inclinacion_change = false;
+        //     display_data.data.origen = SENSOR_ACELEROMETRO;
+        //     display_data.pantalla = TESTS;
+        //     if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+        //         printf("No se pudo enviar la inclinacion a la cola display.\n");
+        //     }
+        //}
         else {
             // Ver que se hace cuando se apreta el boton "atras" (o sea, el cambiar la vista)
             if (hall_change) {
@@ -232,6 +239,25 @@ void central_task(void *pvParameters) {
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("No se pudo enviar informacion a la cola display.\n");
                 }
+            }
+            if (inclinacion_change) {
+                display_data.state = WARNING;
+                display_data.pantalla = TESTS;
+                //inclinacion_change = false;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("No se pudo enviar informacion a la cola display.\n");
+                }
+                
+                printf("[Central_2] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
+                received_data.origen,
+                received_data.altura,
+                received_data.peso_total,
+                received_data.hall_on_off,
+                received_data.ir_on_off,
+                received_data.inclinacion,
+                received_data.freno_on_off);   
+
+            vTaskDelay(pdMS_TO_TICKS(500));
             }
         }
 

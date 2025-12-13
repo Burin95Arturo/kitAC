@@ -64,7 +64,7 @@ void user_init(void) {
     
     // --- Configuración de Pines de SALIDA ---
     // (LED, TRIG, HX711_PD_SCK)
-        io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // NUNCA pull-up/down en salidas
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;   // NUNCA pull-up/down en salidas
@@ -236,12 +236,12 @@ void user_init(void) {
     //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
     //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
             //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
-            //DESCOMENTAR //xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
+    xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
-    xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
+    // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
     //xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
 

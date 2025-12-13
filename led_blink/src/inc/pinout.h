@@ -30,17 +30,3 @@
 #define LCD_BK_LIGHT_ON_LEVEL   1
 
 //not tested
-
-// --- Definiciones de Pines para el LCD ---
-// ¡AJUSTA ESTOS PINES A TUS CONEXIONES REALES EN EL ESP32!
-// Recuerda que estos pines irán conectados al lado de 3.3V del level shifter,
-// y el lado de 5V del level shifter se conectará al LCD.
-#define LCD_RS_PIN          GPIO_NUM_21  // Register Select (RS)
-#define LCD_E_PIN           GPIO_NUM_22  // Enable (E)
-#define LCD_DB4_PIN         GPIO_NUM_23  // Data Bit 4 (DB4)
-#define LCD_DB5_PIN         GPIO_NUM_17  // Data Bit 5 (DB5)
-#define LCD_DB6_PIN         GPIO_NUM_16  // Data Bit 6 (DB6)
-#define LCD_DB7_PIN         GPIO_NUM_15   // Data Bit 7 (DB7)
-
-
-

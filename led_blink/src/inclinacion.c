@@ -5,7 +5,7 @@ void inclinacion_task(void *pvParameters) {
 	
     _aceleracion_type aceleraciones;
 	float angulo_x;
-	// float angulo_y;
+	float angulo_y;
 
 
 	/* Buffer de escritura */
@@ -35,16 +35,18 @@ void inclinacion_task(void *pvParameters) {
 	{
 		/* Intenta tomar semaforo del sensor, si no puede se bloquea */
         if (xSemaphoreTake(inclinacion_semaphore, portMAX_DELAY) == pdTRUE) {
-	
+			printf("Leyendo aceleraciones...\n");
             MPU_ReadAcceleration(&aceleraciones);
 
-            // angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
-
+            angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
+			
             angulo_x=atan(aceleraciones.A_Y/sqrt(pow(aceleraciones.A_X,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
-
+			
+			printf("A_X: %d, A_Y: %d, A_Z: %d\n", aceleraciones.A_X, aceleraciones.A_Y, aceleraciones.A_Z);
             /* Sube el dato a la cola */
             inclinacion_data.origen = SENSOR_ACELEROMETRO;
             inclinacion_data.inclinacion = angulo_x;   
+//			inclinacion_data.inclinacion = 25.0f; // Valor fijo para pruebas
             if (xQueueSend(central_queue, &inclinacion_data, (TickType_t)0) != pdPASS) {
                 printf( "No se pudo enviar inclinacion a la cola.");
             }

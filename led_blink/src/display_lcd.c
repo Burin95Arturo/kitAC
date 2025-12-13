@@ -158,20 +158,20 @@ static float current_height_display = 0.0f;
  * @param nibble El nibble a enviar (bits 0-3).
  */
 static void lcd_send_nibble(uint8_t nibble) {
-    gpio_set_level(LCD_DB4_PIN, (nibble >> 0) & 0x01);
-    gpio_set_level(LCD_DB5_PIN, (nibble >> 1) & 0x01);
-    gpio_set_level(LCD_DB6_PIN, (nibble >> 2) & 0x01);
-    gpio_set_level(LCD_DB7_PIN, (nibble >> 3) & 0x01);
+    // gpio_set_level(LCD_DB4_PIN, (nibble >> 0) & 0x01);
+    // gpio_set_level(LCD_DB5_PIN, (nibble >> 1) & 0x01);
+    // gpio_set_level(LCD_DB6_PIN, (nibble >> 2) & 0x01);
+    // gpio_set_level(LCD_DB7_PIN, (nibble >> 3) & 0x01);
 }
 
 /**
  * @brief Genera un pulso en el pin Enable (E) para que el LCD lea los datos.
  */
 static void lcd_pulse_enable(void) {
-    gpio_set_level(LCD_E_PIN, 1);
-    esp_rom_delay_us(1); // Pequeño delay para asegurar el pulso
-    gpio_set_level(LCD_E_PIN, 0);
-    esp_rom_delay_us(50); // Delay después del pulso para que el LCD procese (min. 37us)
+    // gpio_set_level(LCD_E_PIN, 1);
+    // esp_rom_delay_us(1); // Pequeño delay para asegurar el pulso
+    // gpio_set_level(LCD_E_PIN, 0);
+    // esp_rom_delay_us(50); // Delay después del pulso para que el LCD procese (min. 37us)
 }
 
 /**
@@ -179,13 +179,13 @@ static void lcd_pulse_enable(void) {
  * @param command El comando de 8 bits a enviar.
  */
 static void lcd_send_command(uint8_t command) {
-    gpio_set_level(LCD_RS_PIN, 0); // RS en LOW para modo comando
-    // Enviar nibble alto
-    lcd_send_nibble(command >> 4);
-    lcd_pulse_enable();
-    // Enviar nibble bajo
-    lcd_send_nibble(command & 0x0F);
-    lcd_pulse_enable();
+    // gpio_set_level(LCD_RS_PIN, 0); // RS en LOW para modo comando
+    // // Enviar nibble alto
+    // lcd_send_nibble(command >> 4);
+    // lcd_pulse_enable();
+    // // Enviar nibble bajo
+    // lcd_send_nibble(command & 0x0F);
+    // lcd_pulse_enable();
 }
 
 /**
@@ -193,13 +193,13 @@ static void lcd_send_command(uint8_t command) {
  * @param data El dato de 8 bits a enviar.
  */
 static void lcd_send_data(uint8_t data) {
-    gpio_set_level(LCD_RS_PIN, 1); // RS en HIGH para modo dato
-    // Enviar nibble alto
-    lcd_send_nibble(data >> 4);
-    lcd_pulse_enable();
-    // Enviar nibble bajo
-    lcd_send_nibble(data & 0x0F);
-    lcd_pulse_enable();
+    // gpio_set_level(LCD_RS_PIN, 1); // RS en HIGH para modo dato
+    // // Enviar nibble alto
+    // lcd_send_nibble(data >> 4);
+    // lcd_pulse_enable();
+    // // Enviar nibble bajo
+    // lcd_send_nibble(data & 0x0F);
+    // lcd_pulse_enable();
 }
 
 
@@ -207,64 +207,64 @@ static void lcd_send_data(uint8_t data) {
  * @brief Inicializa el display LCD en modo de 4 bits.
  */
 void lcd_init(void) {
-    // Configurar pines GPIO para el LCD como salidas
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << LCD_RS_PIN) | (1ULL << LCD_E_PIN) |
-                        (1ULL << LCD_DB4_PIN) | (1ULL << LCD_DB5_PIN) |
-                        (1ULL << LCD_DB6_PIN) | (1ULL << LCD_DB7_PIN),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
-    };
-    gpio_config(&io_conf);
-    ESP_LOGI(TAG, "LCD: Pines GPIO inicializados.");
+    // // Configurar pines GPIO para el LCD como salidas
+    // gpio_config_t io_conf = {
+    //     .pin_bit_mask = (1ULL << LCD_RS_PIN) | (1ULL << LCD_E_PIN) |
+    //                     (1ULL << LCD_DB4_PIN) | (1ULL << LCD_DB5_PIN) |
+    //                     (1ULL << LCD_DB6_PIN) | (1ULL << LCD_DB7_PIN),
+    //     .mode = GPIO_MODE_OUTPUT,
+    //     .pull_up_en = GPIO_PULLUP_DISABLE,
+    //     .pull_down_en = GPIO_PULLDOWN_DISABLE,
+    //     .intr_type = GPIO_INTR_DISABLE,
+    // };
+    // gpio_config(&io_conf);
+    // ESP_LOGI(TAG, "LCD: Pines GPIO inicializados.");
 
-    // Asegurarse de que E y RS estén en LOW al inicio
-    gpio_set_level(LCD_E_PIN, 0);
-    gpio_set_level(LCD_RS_PIN, 0);
+    // // Asegurarse de que E y RS estén en LOW al inicio
+    // gpio_set_level(LCD_E_PIN, 0);
+    // gpio_set_level(LCD_RS_PIN, 0);
 
-    // --- Secuencia de Inicialización para HD44780 en 4-bit mode ---
-    // (Referencia: Datasheet del HD44780 o similar)
-    esp_rom_delay_us(20000); // Esperar más de 15ms después de VCC sube a 4.5V (o 20ms por seguridad)
+    // // --- Secuencia de Inicialización para HD44780 en 4-bit mode ---
+    // // (Referencia: Datasheet del HD44780 o similar)
+    // esp_rom_delay_us(20000); // Esperar más de 15ms después de VCC sube a 4.5V (o 20ms por seguridad)
 
-    // 1. Resetear a modo 8-bit (parte 1 de 3)
-    lcd_send_nibble(0x03);
-    lcd_pulse_enable();
-    esp_rom_delay_us(4500); // Esperar más de 4.1ms
+    // // 1. Resetear a modo 8-bit (parte 1 de 3)
+    // lcd_send_nibble(0x03);
+    // lcd_pulse_enable();
+    // esp_rom_delay_us(4500); // Esperar más de 4.1ms
 
-    // 2. Resetear a modo 8-bit (parte 2 de 3)
-    lcd_send_nibble(0x03);
-    lcd_pulse_enable();
-    esp_rom_delay_us(150); // Esperar más de 100us
+    // // 2. Resetear a modo 8-bit (parte 2 de 3)
+    // lcd_send_nibble(0x03);
+    // lcd_pulse_enable();
+    // esp_rom_delay_us(150); // Esperar más de 100us
 
-    // 3. Resetear a modo 8-bit (parte 3 de 3)
-    lcd_send_nibble(0x03);
-    lcd_pulse_enable();
-    esp_rom_delay_us(100); // Pequeño delay
+    // // 3. Resetear a modo 8-bit (parte 3 de 3)
+    // lcd_send_nibble(0x03);
+    // lcd_pulse_enable();
+    // esp_rom_delay_us(100); // Pequeño delay
 
-    // 4. Establecer modo 4-bit
-    lcd_send_nibble(0x02); // Enviar 0x2 para configurar 4-bit mode
-    lcd_pulse_enable();
-    esp_rom_delay_us(100); // Pequeño delay
+    // // 4. Establecer modo 4-bit
+    // lcd_send_nibble(0x02); // Enviar 0x2 para configurar 4-bit mode
+    // lcd_pulse_enable();
+    // esp_rom_delay_us(100); // Pequeño delay
 
-    // 5. Configurar Función (Function Set): 4-bit, 2 líneas, 5x8 puntos
-    lcd_send_command(0x28); // DL=0 (4-bit), N=1 (2 líneas), F=0 (5x8 puntos)
-    esp_rom_delay_us(100);
+    // // 5. Configurar Función (Function Set): 4-bit, 2 líneas, 5x8 puntos
+    // lcd_send_command(0x28); // DL=0 (4-bit), N=1 (2 líneas), F=0 (5x8 puntos)
+    // esp_rom_delay_us(100);
 
-    // 6. Display ON/OFF Control: Display ON, Cursor OFF, Blink OFF
-    lcd_send_command(0x0C); // D=1 (Display ON), C=0 (Cursor OFF), B=0 (Blink OFF)
-    esp_rom_delay_us(100);
+    // // 6. Display ON/OFF Control: Display ON, Cursor OFF, Blink OFF
+    // lcd_send_command(0x0C); // D=1 (Display ON), C=0 (Cursor OFF), B=0 (Blink OFF)
+    // esp_rom_delay_us(100);
 
-    // 7. Limpiar Display (Clear Display)
-    lcd_send_command(0x01); // Limpiar display
-    esp_rom_delay_us(2000); // Este comando requiere un delay largo (aprox 1.52ms)
+    // // 7. Limpiar Display (Clear Display)
+    // lcd_send_command(0x01); // Limpiar display
+    // esp_rom_delay_us(2000); // Este comando requiere un delay largo (aprox 1.52ms)
 
-    // 8. Entry Mode Set: Increment cursor, No display shift
-    lcd_send_command(0x06); // I/D=1 (Incrementa), S=0 (No shift)
-    esp_rom_delay_us(100);
+    // // 8. Entry Mode Set: Increment cursor, No display shift
+    // lcd_send_command(0x06); // I/D=1 (Incrementa), S=0 (No shift)
+    // esp_rom_delay_us(100);
 
-    ESP_LOGI(TAG, "LCD: Inicializacion completa.");
+    // ESP_LOGI(TAG, "LCD: Inicializacion completa.");
 }
 
 /**

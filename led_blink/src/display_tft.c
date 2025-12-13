@@ -1,6 +1,3 @@
-// Author: Federico Cañete  
-// Date: 09/06/2025
-
 #include "inc/ili9340.h"
 #include "inc/fontx.h"
 #include "inc/display_tft.h"
