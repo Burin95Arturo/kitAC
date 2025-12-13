@@ -191,7 +191,8 @@ void display_tft_task(void *pvParameters) {
 	int XPT_SCLK_GPIO = -1;
 	int XPT_MOSI_GPIO = -1;
 
-
+    vTaskDelay(pdMS_TO_TICKS(1000)); //Esperar a que se estabilice todo
+    
     //--------Inicialización SPI y TFT--------//
     spi_clock_speed(10*1000*1000); // 10 MHz
 	spi_master_init(&dev, CONFIG_MOSI_GPIO, CONFIG_SCLK_GPIO, CONFIG_TFT_CS_GPIO, CONFIG_DC_GPIO, 

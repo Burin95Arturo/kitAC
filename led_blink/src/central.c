@@ -74,7 +74,8 @@ void central_task(void *pvParameters) {
     static bool peso_change_1 = false;
     static bool peso_change_2 = false;    
     static bool inclinacion_change = false;
-
+    
+    vTaskDelay(pdMS_TO_TICKS(2000)); // Esperar 2 segundos para que se inicialicen otros componentes
     while (1) {
 
         //xSemaphoreGive(button_semaphore);

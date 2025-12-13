@@ -63,7 +63,6 @@ void user_init(void) {
 
     
     // --- Configuración de Pines de SALIDA ---
-    // (LED, TRIG, HX711_PD_SCK)
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // NUNCA pull-up/down en salidas
@@ -143,13 +142,13 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG_MSJ, "GPIO %d (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_2_DOUT_PIN);
 
-    // Crear el semáforo binario para acelerómetro
-    task_test_semaphore = xSemaphoreCreateBinary();
-    if (task_test_semaphore == NULL) {
-        ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario acelerometro_semaphore. Reiniciando...");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        esp_restart();
-    }
+    // // Crear el semáforo binario para acelerómetro
+    // task_test_semaphore = xSemaphoreCreateBinary();
+    // if (task_test_semaphore == NULL) {
+    //     ESP_LOGE(TAG_MAIN, "Fallo al crear el semáforo binario acelerometro_semaphore. Reiniciando...");
+    //     vTaskDelay(pdMS_TO_TICKS(1000));
+    //     esp_restart();
+    // }
 
     peso_semaphore = xSemaphoreCreateBinary();
     if (peso_semaphore == NULL) {
@@ -238,24 +237,13 @@ void user_init(void) {
             //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&inclinacion_task, "balanza_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, NULL);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
     //xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
 
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = I2C_MASTER_FREQ_HZ,
-    };
-
-    i2c_param_config(I2C_MASTER_NUM, &conf);
-    i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
 }
 
 void app_main(void)

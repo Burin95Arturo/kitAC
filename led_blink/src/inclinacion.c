@@ -17,6 +17,20 @@ void inclinacion_task(void *pvParameters) {
 	/* Se debe leer 0x68 */
 	//Chip_I2C_MasterRead (I2C1, MPU6050_I2C_ADDR, Datos_Rx, 1);
 
+	i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = I2C_MASTER_FREQ_HZ,
+    };
+
+	i2c_param_config(I2C_MASTER_NUM, &conf);
+	i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
+
+	vTaskDelay(pdMS_TO_TICKS(1000)); // Esperar 1 segundo para estabilizar I2C
+
 	/* Wakeup MPU6050 */
 	MPU_WriteRegister(MPU6050_PWR_MGMT_1,0x00);
 
@@ -29,7 +43,6 @@ void inclinacion_task(void *pvParameters) {
 	// DatosControl datos_control;
 	// datos_control.origen = SENSOR;
     data_t inclinacion_data;
-
 
 	while(1)
 	{
