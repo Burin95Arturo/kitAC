@@ -8,9 +8,10 @@
 #include "freertos/semphr.h"
 
 typedef enum {
-    EVENT_BUTTON_PESO,
-    EVENT_BUTTON_TARA,
-    EVENT_BUTTON_ATRAS,
+    EVENT_BUTTON_1=1,
+    EVENT_BUTTON_2,
+    EVENT_BUTTON_3,
+    EVENT_BUTTON_4,
 } button_event_t;
 
 extern QueueHandle_t central_queue;

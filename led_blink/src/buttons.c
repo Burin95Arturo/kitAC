@@ -13,23 +13,30 @@ void button_task(void *pvParameters) {
         if (xSemaphoreTake(button_semaphore, portMAX_DELAY) == pdTRUE) {
 
             // Leer el estado de los botones
-            if (gpio_get_level(BUTTON_PESO_PIN) == 0) {
+            if (gpio_get_level(BUTTON_1) == 0) {
                 vTaskDelay(pdMS_TO_TICKS(50));
-                if (gpio_get_level(BUTTON_PESO_PIN) == 0) {
+                if (gpio_get_level(BUTTON_1) == 0) {
                     vTaskDelay(pdMS_TO_TICKS(50));        
-                    event = EVENT_BUTTON_PESO;
+                    event = EVENT_BUTTON_1;
                     button_pressed = true;
                 }
-            } else if (gpio_get_level(BUTTON_TARA_PIN) == 0) {
+            } else if (gpio_get_level(BUTTON_2) == 0) {
                 vTaskDelay(pdMS_TO_TICKS(50));
-                if (gpio_get_level(BUTTON_TARA_PIN) == 0) {
-                    event = EVENT_BUTTON_TARA;
+                if (gpio_get_level(BUTTON_2) == 0) {
+                    event = EVENT_BUTTON_2;
                     button_pressed = true;
                 }
-            } else if (gpio_get_level(BUTTON_ATRAS_PIN) == 0) {
+            } else if (gpio_get_level(BUTTON_3) == 0) {
                 vTaskDelay(pdMS_TO_TICKS(50));
-                if (gpio_get_level(BUTTON_ATRAS_PIN) == 0) {
-                    event = EVENT_BUTTON_ATRAS;
+                if (gpio_get_level(BUTTON_3) == 0) {
+                    event = EVENT_BUTTON_3;
+                    button_pressed = true;
+                }
+            }
+            else if (gpio_get_level(BUTTON_4) == 0) {
+                vTaskDelay(pdMS_TO_TICKS(50));
+                if (gpio_get_level(BUTTON_4) == 0) {
+                    event = EVENT_BUTTON_4;
                     button_pressed = true;
                 }
             }

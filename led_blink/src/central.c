@@ -78,9 +78,9 @@ void central_task(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(2000)); // Esperar 2 segundos para que se inicialicen otros componentes
     while (1) {
 
-        //xSemaphoreGive(button_semaphore);
+        xSemaphoreGive(button_semaphore);
         //xSemaphoreGive(break_semaphore);
-        xSemaphoreGive(inclinacion_semaphore);
+        //xSemaphoreGive(inclinacion_semaphore);
 
         
         if (!flag_balanza) {
@@ -154,21 +154,38 @@ void central_task(void *pvParameters) {
                 // Si es ATRAS y flag_balanza estaba activo, implica que estaba en la función de peso. Entonces, desactiva flag_balanza
                 // porque se entiende que quiere volver a la vista principal.
                 // Si es ATRAS y flag_balanza inactivo, activa flag_cambiar_vista porque se entiende que se quiere cambiar el sensor que se muestra
-                    if (received_data.button_event == EVENT_BUTTON_PESO || received_data.button_event == EVENT_BUTTON_TARA) {
-                        flag_balanza = true;
-                        xSemaphoreGive(peso_semaphore);
-                        xSemaphoreGive(peso_semaphore_2);
-                        first_flag_balanza = true;
-                    }
-                    else if (flag_balanza && received_data.button_event == EVENT_BUTTON_ATRAS) {
-                        flag_balanza = false;
-                        flag_cambiar_vista = false;
-                        xSemaphoreTake(peso_semaphore, portMAX_DELAY);
-                        xSemaphoreTake(peso_semaphore_2, portMAX_DELAY);
-                    }
-                    else {
-                        flag_cambiar_vista = true;
-                    }
+                    // if (received_data.button_event == EVENT_BUTTON_PESO || received_data.button_event == EVENT_BUTTON_TARA) {
+                    //     flag_balanza = true;
+                    //     xSemaphoreGive(peso_semaphore);
+                    //     xSemaphoreGive(peso_semaphore_2);
+                    //     first_flag_balanza = true;
+                    // }
+                    // else if (flag_balanza && received_data.button_event == EVENT_BUTTON_ATRAS) {
+                    //     flag_balanza = false;
+                    //     flag_cambiar_vista = false;
+                    //     xSemaphoreTake(peso_semaphore, portMAX_DELAY);
+                    //     xSemaphoreTake(peso_semaphore_2, portMAX_DELAY);
+                    // }
+                    // else {
+                    //     flag_cambiar_vista = true;
+                    // }
+
+                        display_data.data.origen = BUTTON_EVENT;
+                        display_data.pantalla = TESTS;
+                        if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                            printf("No se pudo enviar informacion a la cola display.\n");
+                        }
+                        
+                        printf("[Central_2] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d, Tecla: %d\n",
+                        display_data.data.origen,
+                        display_data.data.altura,
+                        display_data.data.peso_total,
+                        display_data.data.hall_on_off,
+                        display_data.data.ir_on_off,
+                        display_data.data.inclinacion,
+                        display_data.data.freno_on_off,
+                        display_data.data.button_event); 
+   
 
                     break;
                 
@@ -249,14 +266,14 @@ void central_task(void *pvParameters) {
                     printf("No se pudo enviar informacion a la cola display.\n");
                 }
                 
-                printf("[Central_2] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
-                received_data.origen,
-                received_data.altura,
-                received_data.peso_total,
-                received_data.hall_on_off,
-                received_data.ir_on_off,
-                received_data.inclinacion,
-                received_data.freno_on_off);   
+                printf("[Central_3] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
+                display_data.data.origen,
+                display_data.data.altura,
+                display_data.data.peso_total,
+                display_data.data.hall_on_off,
+                display_data.data.ir_on_off,
+                display_data.data.inclinacion,
+               display_data.data.freno_on_off);   
 
             vTaskDelay(pdMS_TO_TICKS(500));
             }

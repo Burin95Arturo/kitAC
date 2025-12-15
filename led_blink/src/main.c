@@ -118,23 +118,29 @@ void user_init(void) {
     gpio_config(&io_conf);
     ESP_LOGI(TAG_MSJ, "GPIO %d (HX711_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).", HX711_DOUT_PIN);
     
-    io_conf.pin_bit_mask = (1ULL << BUTTON_PESO_PIN);
+    io_conf.pin_bit_mask = (1ULL << BUTTON_1);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_PESO_PIN);
+    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_1);
 
-    io_conf.pin_bit_mask = (1ULL << BUTTON_TARA_PIN);
+    io_conf.pin_bit_mask = (1ULL << BUTTON_2);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_TARA_PIN);
+    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_2);
 
-    io_conf.pin_bit_mask = (1ULL << BUTTON_ATRAS_PIN);
+    io_conf.pin_bit_mask = (1ULL << BUTTON_3);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
     gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_ATRAS_PIN);
+    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)", BUTTON_3);
+
+    io_conf.pin_bit_mask = (1ULL << BUTTON_4);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    gpio_config(&io_conf);
+    ESP_LOGI(TAG_MSJ, "GPIO %d (BUTTON_4) configurado como entrada.(PULL-UP habilitado)", BUTTON_4);
 
     io_conf.pin_bit_mask = (1ULL << HX711_2_DOUT_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; // ¡DESHABILITADO!

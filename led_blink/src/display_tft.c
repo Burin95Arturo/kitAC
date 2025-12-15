@@ -325,16 +325,20 @@ void display_tft_task(void *pvParameters) {
                 //TECLADO
                 switch (received_data.data.button_event)
                 {
-                case EVENT_BUTTON_PESO:
+                case EVENT_BUTTON_1:
                     teclado_num = 1;
                     break;
                 
-                case EVENT_BUTTON_TARA:
+                case EVENT_BUTTON_2:
                     teclado_num = 2;    
                     break;
 
-                case EVENT_BUTTON_ATRAS:
+                case EVENT_BUTTON_3:
                     teclado_num = 3;    
+                    break;
+
+                case EVENT_BUTTON_4:
+                    teclado_num = 4;    
                     break;
                 default:
                     teclado_num = 1;
@@ -519,19 +523,23 @@ void simulation_task(void *pvParameters) {
             switch (teclado_num)
             {
             case 1:
-                sent_data.data.button_event = EVENT_BUTTON_PESO;
+                sent_data.data.button_event = EVENT_BUTTON_1;
                 break;
 
             case 2:
-            sent_data.data.button_event = EVENT_BUTTON_TARA;
+            sent_data.data.button_event = EVENT_BUTTON_2;
             break;
 
             case 3:
-            sent_data.data.button_event = EVENT_BUTTON_ATRAS;
+            sent_data.data.button_event = EVENT_BUTTON_3;
+            break;
+
+            case 4:
+            sent_data.data.button_event = EVENT_BUTTON_4;
             break;
         
             default:
-            sent_data.data.button_event = EVENT_BUTTON_PESO;
+            sent_data.data.button_event = EVENT_BUTTON_1;
 
                 break;
             }
