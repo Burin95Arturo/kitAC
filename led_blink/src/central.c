@@ -181,7 +181,6 @@ void central_task(void *pvParameters) {
                         display_data.data.altura,
                         display_data.data.peso_total,
                         display_data.data.hall_on_off,
-                        display_data.data.ir_on_off,
                         display_data.data.inclinacion,
                         display_data.data.freno_on_off,
                         display_data.data.button_event); 
@@ -193,7 +192,7 @@ void central_task(void *pvParameters) {
                     break;
             } 
             aux_data.origen = received_data.origen;       
-            display_data.data = aux_data;
+            //display_data.data = aux_data;
         }
 
         // Prendo luz si la baranda esta baja
@@ -271,7 +270,7 @@ void central_task(void *pvParameters) {
                 display_data.data.altura,
                 display_data.data.peso_total,
                 display_data.data.hall_on_off,
-                display_data.data.ir_on_off,
+
                 display_data.data.inclinacion,
                display_data.data.freno_on_off);   
 
@@ -282,3 +281,157 @@ void central_task(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
+
+
+
+void nuevo_central(void *pvParameters) {
+
+    static bool flag_tests = true;
+
+    central_data_t received_data;
+    estados_central_t estado_actual = STATE_BIENVENIDA;
+    
+    static display_t display_data;
+    
+    uint32_t current_request_id = 0; // Contador incremental
+    uint8_t expected_responses = 0;
+
+    while (1) {
+        // --- LÓGICA DE ENTRADA AL ESTADO (TRIGGER) --- //
+        
+        // Incrementamos el ID cada vez que pedimos nuevos datos.
+        // Esto invalida automáticamente cualquier dato viejo en la cola.
+        current_request_id++; 
+
+        switch (estado_actual) {
+            case STATE_BIENVENIDA:
+                // Lo único que se hacemos al entrar es esperar un tiempo y luego cambiar a INICIAL.
+                // o a TESTS si el flag está activo.
+                expected_responses = 0;
+
+                break;
+
+            case STATE_TESTS:
+                /* Se piden datos a todos los sensores:
+                - Inclinación
+                - Balanza 1
+                - Balanza 2
+                - Barandales 
+                - Freno
+                - Altura
+                - Teclado
+                */
+                // Enviamos el current_request_id como valor de notificación
+                xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 7;
+
+                // Cuando se ingresa al estado por primera vez, esto es para solo 
+                // dibujar la pantalla de tests sin datos
+                display_data.contains_data = false; 
+                display_data.pantalla = TESTS;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("No se pudo enviar informacion a la cola display.\n");
+                }   
+
+                break;
+
+            case STATE_INICIAL:
+                // En Estado A, pedimos datos a sensores 1, 2 y 3
+                // Enviamos el current_request_id como valor de notificación
+                // En Estado B, quizás solo pedimos al sensor 4 y 5
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                break;
+
+                default:
+                break;
+        }
+
+        // --- LÓGICA DE ESPERA Y PROCESAMIENTO --- //
+        
+        // Esperamos datos en cola.
+        // Implementamos un timeout para no bloquearnos por siempre.
+        uint8_t received_count = 0;
+
+        while (received_count < expected_responses) {
+            if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(500)) == pdTRUE) {
+                
+                // === FILTRO DE SEGURIDAD === //
+                if (received_data.request_id != current_request_id) {
+                    // Esto permite descartar datos viejos (solicitudes anteriores) que hayan quedado en la cola
+                    ESP_LOGW("CENTRAL", "Descartando dato viejo del sensor %d (Batch %lu vs Actual %lu)", 
+                             received_data.origen, received_data.request_id, current_request_id);
+                    continue; // Ignoramos este mensaje y volvemos a leer la cola
+                    // (este continue ignora lo que viene abajo y avanza con el while)
+                }
+                // Si llegamos aquí, el dato es FRESCO y válido para este estado
+                received_count++;
+
+
+                // --- ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN --- //
+                // Los break son para salir del while de recepción y cambiar al siguiente estado.          
+                if (estado_actual == STATE_TESTS) {
+                    // Enviamos los datos recibidos a la cola del display
+                    display_data.contains_data = true;
+                    display_data.data.origen = received_data.origen;
+                    display_data.data.inclinacion = received_data.inclinacion;
+                    display_data.data.peso_total = received_data.peso_total;
+                    display_data.data.hall_on_off = received_data.hall_on_off;
+                    display_data.data.freno_on_off = received_data.freno_on_off;
+                    display_data.data.altura = received_data.altura;
+                    display_data.data.button_event = received_data.button_event;
+
+                    if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                        printf("No se pudo enviar informacion a la cola display.\n");
+                    }   
+
+                    // TESTS no transiciona, queda siempre en este estado
+
+                }
+                
+                if (estado_actual == STATE_INICIAL) {
+                     if (received_data.peso_total > 50.0) {
+                         // El sensor 2 dispara el cambio.
+                         // Nota: Aún faltaba leer el sensor 3, pero al hacer break aquí,
+                         // salimos del while, el loop principal da la vuelta,
+                         // current_request_id se incrementa, y cuando el sensor 3 
+                         // finalmente escriba en la cola (o si ya escribió), 
+                         // su mensaje tendrá el ID viejo y será descartado en el futuro.
+                         
+                         estado_actual = STATE_PESANDO;
+                         break; // Salimos del loop de recepción para cambiar de estado
+                     }
+                }
+                
+            } else {
+                // Timeout esperando sensores
+                break; 
+            }
+        } // Fin del while de recepción
+        
+        
+        // --- ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA --- //
+        // Transicionan solos después de un tiempo 
+        if (estado_actual == STATE_BIENVENIDA) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            
+            if (flag_tests) {
+                estado_actual = STATE_TESTS;
+                flag_tests = false;
+            } else {                        
+            estado_actual = STATE_INICIAL; 
+            }
+        }
+
+
+    } // Fin del while(1)
+
+}
+
+

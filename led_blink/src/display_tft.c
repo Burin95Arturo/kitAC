@@ -276,7 +276,9 @@ void display_tft_task(void *pvParameters) {
                 }
                 
                 //--------Actualizar datos Pantalla TESTS--------//
- 
+                
+                //Solo si el flag está activo, y poner filtro ORIGEN
+
                 //INCLINACIÓN
                 angulo = (u_int8_t)round(received_data.data.inclinacion);
                 if (angulo != angulo_prev) {

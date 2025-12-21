@@ -29,11 +29,12 @@ static const char *TAG_MSJ = "MSJ";
 static const char *TAG_MAIN = "APP_MAIN";
 static const char *TAG_GPIO = "GPIO_INIT";
 
-#define MAX_LENGHT_QUEUE 50
+#define MAX_LENGHT_QUEUE 10
 
 QueueHandle_t central_queue = NULL;
 QueueHandle_t display_queue = NULL;
 
+// Handles de semáforos binarios
 SemaphoreHandle_t task_test_semaphore = NULL;
 SemaphoreHandle_t peso_semaphore = NULL;
 SemaphoreHandle_t peso_semaphore_2 = NULL;
@@ -44,6 +45,17 @@ SemaphoreHandle_t button_semaphore = NULL;
 SemaphoreHandle_t inclinacion_semaphore = NULL;
 SemaphoreHandle_t buzzer_semaphore = NULL;
 SemaphoreHandle_t break_semaphore = NULL;
+
+// Handle de tareas de sensores (necesario para Notify)
+TaskHandle_t inclinacion_task_handle = NULL;
+TaskHandle_t balanza_task_handle = NULL;
+TaskHandle_t balanza_2_task_handle = NULL;
+TaskHandle_t barandales_task_handle = NULL;
+TaskHandle_t altura_task_handle = NULL;
+TaskHandle_t freno_task_handle = NULL;
+TaskHandle_t teclado_task_handle = NULL;
+
+
 
 void task_blink(void *pvParameters) {
     while(true) {
@@ -219,7 +231,7 @@ void user_init(void) {
         esp_restart();
     }
 
-    central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(data_t));
+    central_queue = xQueueCreate(MAX_LENGHT_QUEUE, sizeof(central_data_t));
     if (central_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola central.");
         return;
@@ -233,22 +245,22 @@ void user_init(void) {
     // Inicializacion de tareas
     //Las tabuladas ya estaban comentadas
 
-    //xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hc_sr04_task, "hc_sr04_task", 2048, NULL, 1, &altura_task_handle);
             //xTaskCreate(&task_blink, "blink_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&hall_sensor_task, "hall_sensor_task", 2048, NULL, 1, &barandales_task_handle);
     //xTaskCreate(&ir_sensor_task, "ir_sensor_task", 2048, NULL, 1, NULL);
-    //xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, NULL);
-    //xTaskCreate(&button_task, "button_task", 2048, NULL, 1, NULL);     // Pila de 2KB
-    //xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&balanza_task, "balanza_task", 4096, NULL, 1, &balanza_task_handle);
+    xTaskCreate(&button_task, "button_task", 2048, NULL, 1, &teclado_task_handle);     // Pila de 2KB
+    xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, &balanza_2_task_handle);
             //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
     xTaskCreate(&central_task, "central_task", 4096, NULL, 1, NULL); // Pila de 4K
     //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, NULL);
+    xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, &inclinacion_task_handle);
     //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
-    //xTaskCreate(&break_task, "break_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&break_task, "break_task", 2048, NULL, 1, &freno_task_handle);
 
 }
 
