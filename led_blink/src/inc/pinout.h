@@ -17,7 +17,7 @@
 #define BREAK_PIN           GPIO_NUM_3     // Pin del LED externo  
 //2da balanza 
 #define HX711_2_DOUT_PIN    GPIO_NUM_26     // Pin de datos (DOUT) del HX711 de la 2da balanza
-#define HX711_2_PD_SCK_PIN  GPIO_NUM_1     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
+#define HX711_2_PD_SCK_PIN  GPIO_NUM_17     // Pin de reloj (PD_SCK) del HX711 de la 2da balanza
 
 #define CONFIG_MOSI_GPIO    23
 #define CONFIG_SCLK_GPIO    18

@@ -12,6 +12,7 @@ typedef enum {
     EVENT_BUTTON_2,
     EVENT_BUTTON_3,
     EVENT_BUTTON_4,
+    EVENT_NO_KEY,
 } button_event_t;
 
 extern QueueHandle_t central_queue;

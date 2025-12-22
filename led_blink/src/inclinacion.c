@@ -3,7 +3,10 @@
 
 void inclinacion_task(void *pvParameters) {
 	
-    _aceleracion_type aceleraciones;
+    
+	central_data_t inclinacion_data;
+	uint32_t received_request_id; 
+	_aceleracion_type aceleraciones;
 	float angulo_x;
 	float angulo_y;
 
@@ -40,32 +43,33 @@ void inclinacion_task(void *pvParameters) {
 	//NO CONFIGURO SENSIBILIDAD DEL ACELERÓMETRO. DEFAULT: +/-2G
 	//TAMPOCO DEL GIRÓSCOPO
     
-	// DatosControl datos_control;
-	// datos_control.origen = SENSOR;
-    data_t inclinacion_data;
 
 	while(1)
 	{
-		/* Intenta tomar semaforo del sensor, si no puede se bloquea */
-        if (xSemaphoreTake(inclinacion_semaphore, portMAX_DELAY) == pdTRUE) {
-			printf("Leyendo aceleraciones...\n");
-            MPU_ReadAcceleration(&aceleraciones);
+		/* Esperar notificación de Central */
+		// Espera indefinidamente (portMAX_DELAY) hasta recibir una notificación
 
-            angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
-			
-            angulo_x=atan(aceleraciones.A_Y/sqrt(pow(aceleraciones.A_X,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
-			
-			printf("A_X: %d, A_Y: %d, A_Z: %d\n", aceleraciones.A_X, aceleraciones.A_Y, aceleraciones.A_Z);
-            /* Sube el dato a la cola */
-            inclinacion_data.origen = SENSOR_ACELEROMETRO;
-            inclinacion_data.inclinacion = angulo_x;   
-//			inclinacion_data.inclinacion = 25.0f; // Valor fijo para pruebas
-            if (xQueueSend(central_queue, &inclinacion_data, (TickType_t)0) != pdPASS) {
-                printf( "No se pudo enviar inclinacion a la cola.");
-            }
-        }
+		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
 
-		vTaskDelay(pdMS_TO_TICKS(100));
+		//printf("Leyendo aceleraciones...\n");
+		MPU_ReadAcceleration(&aceleraciones);
+
+		angulo_y=atan(aceleraciones.A_X/sqrt(pow(aceleraciones.A_Y,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
+		
+		angulo_x=atan(aceleraciones.A_Y/sqrt(pow(aceleraciones.A_X,2) + pow(aceleraciones.A_Z,2)))*RAD_TO_DEG;
+		
+		//printf("A_X: %d, A_Y: %d, A_Z: %d\n", aceleraciones.A_X, aceleraciones.A_Y, aceleraciones.A_Z);
+		/* Sube el dato a la cola */
+		inclinacion_data.origen = SENSOR_ACELEROMETRO;
+		inclinacion_data.inclinacion = angulo_x;   
+//		inclinacion_data.inclinacion = 25.0f; // Valor fijo para pruebas
+		inclinacion_data.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+		if (xQueueSend(central_queue, &inclinacion_data, (TickType_t)0) != pdPASS) {
+			printf( "No se pudo enviar inclinacion a la cola.");
+		}
+
+
+		vTaskDelay(pdMS_TO_TICKS(250));
 
 
 	}

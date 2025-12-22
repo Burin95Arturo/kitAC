@@ -1,7 +1,7 @@
 #include "inc/central.h"
 
 
-void calcular_peso(data_t *peso_data) {
+void calcular_peso(central_data_t *peso_data) {
     static float vector_peso_1 [MUESTRAS_PROMEDIO] = {0};
     static float vector_peso_2 [MUESTRAS_PROMEDIO] = {0};
     static int index_1 = 0;
@@ -176,7 +176,7 @@ void central_task(void *pvParameters) {
                             printf("No se pudo enviar informacion a la cola display.\n");
                         }
                         
-                        printf("[Central_2] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d, Tecla: %d\n",
+                        printf("[Central_2] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, Inclinacion: %f, Freno: %d, Tecla: %d\n",
                         display_data.data.origen,
                         display_data.data.altura,
                         display_data.data.peso_total,
@@ -265,7 +265,7 @@ void central_task(void *pvParameters) {
                     printf("No se pudo enviar informacion a la cola display.\n");
                 }
                 
-                printf("[Central_3] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d, IR_OnOff: %d, Inclinacion: %f, Freno: %d\n",
+                printf("[Central_3] Origen: %d, Altura: %ld, Peso_total: %.2f, HALL_OnOff: %d,  Inclinacion: %f, Freno: %d\n",
                 display_data.data.origen,
                 display_data.data.altura,
                 display_data.data.peso_total,
@@ -297,7 +297,7 @@ void nuevo_central(void *pvParameters) {
     uint8_t expected_responses = 0;
 
     while (1) {
-        // --- LÓGICA DE ENTRADA AL ESTADO (TRIGGER) --- //
+        // --- LÓGICA DE ENTRADA AL ESTADO --- //
         
         // Incrementamos el ID cada vez que pedimos nuevos datos.
         // Esto invalida automáticamente cualquier dato viejo en la cola.
@@ -323,14 +323,14 @@ void nuevo_central(void *pvParameters) {
                 */
                 // Enviamos el current_request_id como valor de notificación
                 xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);s
                 xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 7;
+                expected_responses = 2;
 
                 // Cuando se ingresa al estado por primera vez, esto es para solo 
                 // dibujar la pantalla de tests sin datos
@@ -379,7 +379,8 @@ void nuevo_central(void *pvParameters) {
                 if (estado_actual == STATE_TESTS) {
                     // Enviamos los datos recibidos a la cola del display
                     display_data.contains_data = true;
-                    display_data.data.origen = received_data.origen;
+                    display_data.data.origen = received_data.origen; //OJO CON "CALCULO PESO". 
+                    // Si se lee teclaodo y no tiene datos, no se envía nada. (agregar eso)
                     display_data.data.inclinacion = received_data.inclinacion;
                     display_data.data.peso_total = received_data.peso_total;
                     display_data.data.hall_on_off = received_data.hall_on_off;
@@ -388,7 +389,7 @@ void nuevo_central(void *pvParameters) {
                     display_data.data.button_event = received_data.button_event;
 
                     if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                        printf("No se pudo enviar informacion a la cola display.\n");
+                        printf("No se pudo enviar TESTS a la cola display.\n");
                     }   
 
                     // TESTS no transiciona, queda siempre en este estado

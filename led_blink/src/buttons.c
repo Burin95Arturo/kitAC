@@ -1,6 +1,8 @@
 #include "inc/buttons.h"
 
 
+// HACER QUE DEVUELVA "NO_KEY" SI NO SE PRESIONA NINGUN BOTON
+
 void button_task(void *pvParameters) {
     // ESP_LOGI(TAG_BUTTON, "Tarea de lectura de botones iniciada.");
     printf("Tarea de lectura de botones iniciada.\n");

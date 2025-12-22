@@ -279,92 +279,117 @@ void display_tft_task(void *pvParameters) {
                 
                 //Solo si el flag está activo, y poner filtro ORIGEN
 
-                //INCLINACIÓN
-                angulo = (u_int8_t)round(received_data.data.inclinacion);
-                if (angulo != angulo_prev) {
-                    lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, WHITE);
-                    sprintf(string_angulo, "%d", angulo);
-                    lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, AZUL_OCEANO);
-                    angulo_prev = angulo;
-                }
+                if (received_data.contains_data){
 
-                //BALANZA
-                if (flag_refresh_display_data) {
-                    lcdDrawFillRect(&dev, 77,106,96,184, WHITE);
-                    sprintf(string_peso, "%.2f", received_data.data.peso_total);
-                    lcdDrawString(&dev, Cons32fx, 102, 185, (uint8_t *)&string_peso, VERDE_OSCURO);
-                    flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
-                }
+                    switch (received_data.data.origen)
+                    {
+                        case SENSOR_ACELEROMETRO:
+                        //INCLINACIÓN
+                        angulo = (u_int8_t)round(received_data.data.inclinacion);
+                        if (angulo < 0) angulo = angulo * -1; //Valor absoluto
+                        if (angulo != angulo_prev) {
+                            lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, WHITE);
+                            sprintf(string_angulo, "%d", angulo);
+                            lcdDrawString(&dev, Cons32fx, 72, 150, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                            angulo_prev = angulo;
+                        }
+                        break;
 
-                //BARANDALES
-                barandales_arriba = received_data.data.hall_on_off; 
-                if (barandales_arriba != barandales_arriba_prev) {
-                    lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, WHITE);
-                    if (barandales_arriba) {
-                        strcpy(string_barandales, "ARRIBA");
-                        lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, GREEN);
-                    } else {
-                        strcpy(string_barandales, "ABAJO");
-                        lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, RED);
-                    }
-                    barandales_arriba_prev = barandales_arriba;
-                }
+                        case SENSOR_BALANZA: //¿o poner CALCULO_PESO?
+                        //BALANZA
+                        if (flag_refresh_display_data) {
+                            lcdDrawFillRect(&dev, 77,106,96,184, WHITE);
+                            sprintf(string_peso, "%.2f", received_data.data.peso_total);
+                            lcdDrawString(&dev, Cons32fx, 102, 185, (uint8_t *)&string_peso, VERDE_OSCURO);
+                            flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
+                        }
+                        break;
 
-                //FRENO
-                freno_ok = received_data.data.freno_on_off;
-                if (freno_ok != freno_ok_prev) {
-                    lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, WHITE);
-                    if (freno_ok) {
-                        strcpy(string_freno, "OK");
-                        lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, GREEN);
-                    } else {
-                        strcpy(string_freno, "NO");
-                        lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, RED);
-                    }
-                    freno_ok_prev = freno_ok;
-                }
+                        case SENSOR_HALL:
+                       //BARANDALES
+                        barandales_arriba = received_data.data.hall_on_off; 
+                        if (barandales_arriba != barandales_arriba_prev) {
+                            lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, WHITE);
+                            if (barandales_arriba) {
+                                strcpy(string_barandales, "ARRIBA");
+                                lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, GREEN);
+                            } else {
+                                strcpy(string_barandales, "ABAJO");
+                                lcdDrawString(&dev, Cons32fx, 132, 160, (uint8_t *)string_barandales, RED);
+                            }
+                            barandales_arriba_prev = barandales_arriba;
+                        }
+                        break;
 
-                //TECLADO
-                switch (received_data.data.button_event)
-                {
-                case EVENT_BUTTON_1:
-                    teclado_num = 1;
-                    break;
-                
-                case EVENT_BUTTON_2:
-                    teclado_num = 2;    
-                    break;
+                        case SENSOR_FRENO:
+                        //FRENO
+                        freno_ok = received_data.data.freno_on_off;
+                        if (freno_ok != freno_ok_prev) {
+                            lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, WHITE);
+                            if (freno_ok) {
+                                strcpy(string_freno, "OK");
+                                lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, GREEN);
+                            } else {
+                                strcpy(string_freno, "NO");
+                                lcdDrawString(&dev, Cons32fx, 162, 200, (uint8_t *)string_freno, RED);
+                            }
+                            freno_ok_prev = freno_ok;
+                        }
 
-                case EVENT_BUTTON_3:
-                    teclado_num = 3;    
-                    break;
+                        case SENSOR_ALTURA:
+                        //ALTURA
+                        altura = (u_int8_t)round(received_data.data.altura);
+                        if (altura != altura_prev) {
+                            lcdDrawFillRect(&dev, 197, 154, 216, 198, WHITE);
+                            sprintf(string_altura, "%d", altura);   
+                            lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
+                            altura_prev = altura;        
+                        }
 
-                case EVENT_BUTTON_4:
-                    teclado_num = 4;    
-                    break;
-                default:
-                    teclado_num = 1;
-                    break;
-                }   
+                        break;
 
-                if (teclado_num != teclado_num_prev) {
-                    lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, WHITE);
-                    sprintf(string_teclado, "%d", teclado_num);
-                    lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
-                    teclado_num_prev = teclado_num;
-                }
+                        case BUTTON_EVENT:
+                            //TECLADO
+                            switch (received_data.data.button_event)
+                            {
+                            case EVENT_BUTTON_1:
+                                teclado_num = 1;
+                                break;
+                            
+                            case EVENT_BUTTON_2:
+                                teclado_num = 2;    
+                                break;
 
-                //ALTURA
-                altura = (u_int8_t)round(received_data.data.altura);
-                if (altura != altura_prev) {
-                    lcdDrawFillRect(&dev, 197, 154, 216, 198, WHITE);
-                    sprintf(string_altura, "%d", altura);   
-                    lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
-                    altura_prev = altura;
-                
-                }
-                //--------Fin actualizar datos Pantalla TESTS--------//
-                break;
+                            case EVENT_BUTTON_3:
+                                teclado_num = 3;    
+                                break;
+
+                            case EVENT_BUTTON_4:
+                                teclado_num = 4;    
+                                break;
+                            default:
+                                teclado_num = 1;
+                                break;
+                            }   
+
+                            if (teclado_num != teclado_num_prev) {
+                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, WHITE);
+                                sprintf(string_teclado, "%d", teclado_num);
+                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
+                                teclado_num_prev = teclado_num;
+                            }
+                        break;
+                    
+                        default:
+                        break;
+
+                        //--------Fin actualizar datos Pantalla TESTS--------//
+                    
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+
+                break; //Fin case TESTS
 
             case INICIAL:
                 /* code */
