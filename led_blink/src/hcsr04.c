@@ -27,30 +27,37 @@ long getDistance() {
 void hc_sr04_task(void *pvParameters) {
   
     long distance;
-    float current_height_m;
-    data_t altura;
+    float current_height_m = 0.0f;
+    central_data_t altura;
+    static uint32_t received_request_id; 
+    altura.origen = SENSOR_ALTURA;
 
     while (1) {
-        if (xSemaphoreTake(altura_semaphore, portMAX_DELAY) == pdTRUE) {
-            distance = getDistance();
-            printf("Distancia: %ld cm\n", distance);
 
-            if (distance < 20) {
-                gpio_set_level(INTERNAL_LED_PIN, 1);
-            } else {
-                gpio_set_level(INTERNAL_LED_PIN, 0);
-            }
+        /* Esperar notificación de Central */
+		// Espera indefinidamente (portMAX_DELAY) hasta recibir una notificación
 
-            current_height_m = (long) distance;
-            // Enviar el peso calculado a la cola
-            altura.origen = SENSOR_ALTURA;
-            altura.altura = current_height_m;
+		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
         
-            if (xQueueSend(central_queue, &altura, (TickType_t)0) != pdPASS) {
-                // ESP_LOGE(TAG_3, "No se pudo enviar el peso a la cola.");
-                printf("No se pudo enviar el peso a la cola.\n");
-            }
+        distance = getDistance();
+        printf("Distancia: %ld cm\n", distance);
+
+        if (distance < 20) {
+            gpio_set_level(INTERNAL_LED_PIN, 1);
+        } else {
+            gpio_set_level(INTERNAL_LED_PIN, 0);
         }
+
+        current_height_m = (long) distance;
+        // Enviar el peso calculado a la cola
+        altura.altura = current_height_m;
+        altura.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+
+        if (xQueueSend(central_queue, &altura, pdMS_TO_TICKS(10)) != pdPASS) {
+            // ESP_LOGE(TAG_3, "No se pudo enviar el peso a la cola.");
+            printf("No se pudo enviar el peso a la cola.\n");
+        }
+        
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }

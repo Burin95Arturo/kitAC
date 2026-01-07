@@ -124,7 +124,7 @@ void balanza_task(void *pvParameters){
         peso_data.peso_raw1 = acu_raw_value / HX711_READ_ITERATIONS;
         
         // Enviar la lectura promediada a la cola
-        if (xQueueSend(central_queue, &peso_data, (TickType_t)0) != pdPASS) {
+        if (xQueueSend(central_queue, &peso_data, pdMS_TO_TICKS(10)) != pdPASS) {
             // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
             printf("No se pudo enviar balanza 1 a la cola.\n");
         }

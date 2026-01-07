@@ -166,8 +166,8 @@ void nuevo_central(void *pvParameters) {
 
                     if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
                         printf("Error enviando datos en pantalla TESTS.\n");
-                    }   
 
+                    }
                     // TESTS no transiciona, queda siempre en este estado
 
                 }

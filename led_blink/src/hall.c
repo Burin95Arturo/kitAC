@@ -22,15 +22,15 @@ void hall_sensor_task(void *pvParameters) {
         
 //            gpio_set_level(INTERNAL_LED_PIN, getHallSensorState());
             
-        //hall_data.hall_on_off = getHallSensorState();
+        hall_data.hall_on_off = getHallSensorState();
         hall_data.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
         
                 //Sólo para simulación:
-                if (received_request_id % 12 == 0){
-                    hall_data.hall_on_off = !hall_data.hall_on_off;
-                }
+                //if (received_request_id % 12 == 0){
+                //    hall_data.hall_on_off = !hall_data.hall_on_off;
+                //}
         
-        if (xQueueSend(central_queue, &hall_data, (TickType_t)0) != pdPASS) {
+        if (xQueueSend(central_queue, &hall_data, pdMS_TO_TICKS(10)) != pdPASS) {
             printf("No se pudo enviar el HALL a la cola.");
         }
         
