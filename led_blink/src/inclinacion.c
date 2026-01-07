@@ -48,7 +48,6 @@ void inclinacion_task(void *pvParameters) {
 	{
 		/* Esperar notificación de Central */
 		// Espera indefinidamente (portMAX_DELAY) hasta recibir una notificación
-
 		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
 
 		//printf("Leyendo aceleraciones...\n");

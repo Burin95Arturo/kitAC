@@ -295,7 +295,7 @@ void display_tft_task(void *pvParameters) {
                         }
                         break;
 
-                        case SENSOR_BALANZA: //¿o poner CALCULO_PESO?
+                        case CALCULO_PESO: 
                         //BALANZA
                         if (flag_refresh_display_data) {
                             lcdDrawFillRect(&dev, 77,106,96,184, WHITE);

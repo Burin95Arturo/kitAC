@@ -7,6 +7,24 @@
 
 #include "freertos/semphr.h"
 
+// Número de lecturas por solicitud (ajustable)
+#ifndef HX711_READ_ITERATIONS
+#define HX711_READ_ITERATIONS 10
+#endif
+
+// --- PARÁMETROS DE CALIBRACIÓN DE LAS BALANZAS ---
+// Calculados basándose en la tabla de datos y TARA
+#define TARA_BALANZA_1  160253  // Valor en vacío HX711 n.º 1
+#define TARA_BALANZA_2  507016  // Valor en vacío HX711 n.º 2
+
+// Factores de división (Cuentas por Kg)
+// K1 es menor porque las "patitas" absorben peso, generando menos cuentas por Kg real.
+#define COEF_K1         23870.0f 
+#define COEF_K2         27620.0f
+
+// Umbral mínimo para mostrar peso (filtro de ruido)
+#define PESO_MINIMO_KG  2.0f
+
 typedef enum {
     EVENT_BUTTON_1=1,
     EVENT_BUTTON_2,
@@ -70,9 +88,11 @@ typedef struct {
     sensor_origen_t origen;
     long altura;
     float inclinacion;
+    long peso_raw1;
+    long peso_raw2;
     float peso_1;
     float peso_2;
-    float peso_total;
+    float peso_total; //Borrar pesos, quedarse con los raw
     bool hall_on_off;
     bool freno_on_off;
     button_event_t button_event;

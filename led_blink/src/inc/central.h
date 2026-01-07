@@ -11,5 +11,4 @@
 
 #define MUESTRAS_PROMEDIO 100
 
-void central_task(void *pvParameters);
 void nuevo_central(void *pvParameters);

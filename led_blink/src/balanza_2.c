@@ -98,36 +98,55 @@ static long hx711_read_raw(void) {
 void balanza_2_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
-    long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
-    
-    int count = 0;
-    data_t peso_data_2;
+    long acu_raw_value = 0; 
+    central_data_t peso_data_2;
+    uint32_t received_request_id; 
+    peso_data_2.origen = SENSOR_BALANZA_2;
 
     while (1) {
-        if (xSemaphoreTake(peso_semaphore, portMAX_DELAY) == pdTRUE) {
-    
-            current_raw_value = hx711_read_raw();
-            
-            // 1. Almacenar el valor crudo leído.
-            hx711_2_raw_reading = current_raw_value; 
 
-            // 2. Calcular el peso en kilogramos usando los valores de calibración.
-            if (SCALE_FACTOR_VALUE_2 != 0) { // Evitar división por cero
-                hx711_2_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE_2 ) / SCALE_FACTOR_VALUE_2;
-            } else {
-                hx711_2_weight_kg = 0.0f;
-    //            ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
-                printf("ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.\n");
-            }
+		/* Esperar notificación de Central */
+		// Espera indefinidamente (portMAX_DELAY) hasta recibir una notificación
+		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
 
-            // Enviar el peso calculado a la cola
-            peso_data_2.origen = SENSOR_BALANZA_2;  
-            peso_data_2.peso_2 = hx711_2_weight_kg;  
-            if (xQueueSend(central_queue, &peso_data_2, (TickType_t)0) != pdPASS) {
-                // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
-                printf("No se pudo enviar el peso a la cola.\n");
-            }           
+        peso_data_2.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+     
+        for (int i = 0; i < HX711_READ_ITERATIONS; i++) {
+
+            acu_raw_value += hx711_read_raw();
+            // Esperar 100 ms entre lecturas
+            vTaskDelay(pdMS_TO_TICKS(100));
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+
+        peso_data_2.peso_raw1 = acu_raw_value / HX711_READ_ITERATIONS;
+        
+        // Enviar la lectura promediada a la cola
+        if (xQueueSend(central_queue, &peso_data_2, (TickType_t)0) != pdPASS) {
+            // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
+            printf("No se pudo enviar balanza 2 a la cola.\n");
+        }
+
+        // Resetear acumulador para la siguiente lectura
+        acu_raw_value = 0;
+
+            //current_raw_value = hx711_read_raw();
+            //// 1. Almacenar el valor crudo leído.
+            //hx711_raw_reading = current_raw_value; 
+            //
+            //// 2. Calcular el peso en kilogramos usando los valores de calibración.
+            //if (SCALE_FACTOR_VALUE != 0) { // Evitar división por cero
+            //    hx711_weight_kg = ( (float)current_raw_value - (float)ZERO_OFFSET_VALUE ) / SCALE_FACTOR_VALUE;
+            //} else {
+            //    hx711_weight_kg = 0.0f;
+            //    //ESP_LOGE(TAG, "ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.");
+            //    printf("ERROR: SCALE_FACTOR_VALUE es cero. Por favor, calibra el sensor.\n");
+            //}     
+            ////
+            //// 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
+                    
+            //printf("Lectura Balanza 1: %ld | Peso: %.3f Kg\n", current_raw_value, hx711_weight_kg);
+
+        vTaskDelay(pdMS_TO_TICKS(100)); // Leer cada 100 ms
     }
+
 }
