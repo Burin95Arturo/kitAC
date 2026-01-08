@@ -10,12 +10,16 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "inc/program.h"
+#include "freertos/queue.h"
 
 // Se asume que las definiciones de calibración y variables globales son accesibles:
 // #define ZERO_OFFSET_VALUE 258794L // Raw value obtenido con balanza sin carga
 // #define SCALE_FACTOR_VALUE 7925.3f // (Valor con peso conocido - Raw) / peso conocido
-#define ZERO_OFFSET_VALUE 601000L // Raw value obtenido con balanza sin carga
-#define SCALE_FACTOR_VALUE 17980.01f // (Valor con peso conocido - Raw) / peso conocido
+// #define ZERO_OFFSET_VALUE 601000L // Raw value obtenido con balanza sin carga
+// #define SCALE_FACTOR_VALUE 17980.01f // (Valor con peso conocido - Raw) / peso conocido
+#define ZERO_OFFSET_VALUE 589179L // Raw value obtenido con balanza sin carga
+#define SCALE_FACTOR_VALUE 16533.88f // (Valor con peso conocido - Raw) / peso conocido
+
 
 volatile long hx711_2_raw_reading = 0;
 volatile float hx711_2_weight_kg = 0.0f;
@@ -119,6 +123,7 @@ void balanza_2_task(void *pvParameters){
     long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
     
     ESP_LOGI(TAG, "Tarea Balanza 1 inicializada...");
+    Peso_Data_t mi_dato;
 
     while (1) {
           
@@ -136,8 +141,15 @@ void balanza_2_task(void *pvParameters){
         }
 
         // 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
-        ESP_LOGE(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", hx711_2_raw_reading, hx711_2_weight_kg);
+        //ESP_LOGE(TAG, "Lectura Balanza 2: %ld | Peso: %.3f Kg", hx711_2_raw_reading, hx711_2_weight_kg);
+        mi_dato.peso_balanza_2_kg = hx711_2_weight_kg;
+        mi_dato.raw_2 = hx711_2_raw_reading;
 
+        if (xQueueSend(weight_queue, &mi_dato, pdMS_TO_TICKS(10)) == pdPASS) {
+            //ESP_LOGI("BALANZA", "Dato enviado a la cola");
+        } else {
+            ESP_LOGW("BALANZA", "Cola llena, no se pudo enviar");
+        }
         // 4. Pausar para controlar la frecuencia de lectura.
 
         vTaskDelay(pdMS_TO_TICKS(800)); 

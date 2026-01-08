@@ -18,6 +18,8 @@ typedef enum {
 typedef struct {
     float peso_balanza_1_kg;
     float peso_balanza_2_kg;
+    long raw_1;
+    long raw_2;
 } Peso_Data_t; 
 
 extern QueueHandle_t button_event_queue;

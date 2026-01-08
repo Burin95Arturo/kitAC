@@ -143,7 +143,7 @@ void user_init(void) {
         esp_restart();
     }
 
-    weight_queue = xQueueCreate(2, sizeof(Peso_Data_t));
+    weight_queue = xQueueCreate(1, sizeof(Peso_Data_t));
     if (weight_queue == NULL) {
         ESP_LOGE("MAIN", "No se pudo crear la cola de peso.");
         return;

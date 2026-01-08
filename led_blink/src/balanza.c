@@ -10,19 +10,22 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "inc/balanza.h"
+#include "freertos/queue.h"
 
 // --- Constantes de Calibración (¡AJUSTA ESTOS VALORES DESPUÉS DE CALIBRAR FÍSICAMENTE!) ---
 // Este es el valor crudo del HX711 cuando no hay peso sobre la celda de carga.
 // Obtén este valor promediando varias lecturas sin carga.
 // #define ZERO_OFFSET_VALUE 82600L // Raw value obtenido con balanza sin carga
 // #define ZERO_OFFSET_VALUE 693649L // Raw value obtenido con balanza sin carga
-#define ZERO_OFFSET_VALUE 203000L // Raw value obtenido con balanza sin carga
+//#define ZERO_OFFSET_VALUE 203000L // Raw value obtenido con balanza sin carga
+#define ZERO_OFFSET_VALUE 211822L
 
 // Este es el factor de escala: cuántos "tics" crudos del HX711 equivalen a 1 kilogramo.
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 //#define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
 // #define SCALE_FACTOR_VALUE 15349.33f // Se uso una pesa de 4.6Kg y una balanza de presicion
-#define SCALE_FACTOR_VALUE 17980.1f // Se uso una pesa de 4.6Kg y una balanza de presicion
+//#define SCALE_FACTOR_VALUE 17980.1f // Se uso una pesa de 4.6Kg y una balanza de presicion
+#define SCALE_FACTOR_VALUE 7632.248f
 
 // --- Tag para el logging del ESP-IDF ---
 static const char *TAG = "HX711_DRIVER";
@@ -132,7 +135,8 @@ void balanza_task(void *pvParameters){
     long current_raw_value = 0; // Inicializar en 0 o 1 es opcional
     
     ESP_LOGI(TAG, "Tarea Balanza 1 inicializada...");
-    
+    Peso_Data_t dato_recibido;
+
     while (1) {
           
         current_raw_value = hx711_read_raw();
@@ -149,8 +153,15 @@ void balanza_task(void *pvParameters){
         }
 
         // 3. Imprimir (Enviar) el valor Raw y el Peso en Kg.
-        ESP_LOGI(TAG, "Lectura Balanza 1: %ld | Peso: %.3f Kg", hx711_raw_reading, hx711_weight_kg);
+        //ESP_LOGI(TAG, "Lectura Balanza 1: %ld | Peso: %.3f Kg", hx711_raw_reading, hx711_weight_kg);
+        if (xQueueReceive(weight_queue, &dato_recibido, portMAX_DELAY) == pdPASS){
 
+        }
+
+        ESP_LOGI(TAG, "B1: %ld | P1: %.3f Kg | B2: %ld | P2: %.3f Kg", 
+            hx711_raw_reading, hx711_weight_kg, dato_recibido.raw_2, 
+            dato_recibido.peso_balanza_2_kg);
+        
         // 4. Pausar para controlar la frecuencia de lectura.
 
         vTaskDelay(pdMS_TO_TICKS(800)); 
