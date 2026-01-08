@@ -367,8 +367,12 @@ void display_tft_task(void *pvParameters) {
                             case EVENT_BUTTON_4:
                                 teclado_num = 4;    
                                 break;
+
+                            case EVENT_NO_KEY:
+                                teclado_num = 8;
+                                break;
                             default:
-                                teclado_num = 1;
+                                teclado_num = 8;
                                 break;
                             }   
 

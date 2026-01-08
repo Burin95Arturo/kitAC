@@ -71,14 +71,14 @@ void nuevo_central(void *pvParameters) {
                 */
                 // Enviamos el current_request_id como valor de notificación
                 xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                    xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
-                    xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
-                    xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 5;
+                expected_responses = 7;
 
                 // Cuando se ingresa al estado por primera vez, esto es para solo 
                 // dibujar la pantalla de tests sin datos

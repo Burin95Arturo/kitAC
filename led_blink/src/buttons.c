@@ -20,27 +20,28 @@ void button_task(void *pvParameters) {
 
         // Leer el estado de los botones
         if (gpio_get_level(BUTTON_1) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(50));
+            vTaskDelay(pdMS_TO_TICKS(20));
             if (gpio_get_level(BUTTON_1) == 0) {
-                vTaskDelay(pdMS_TO_TICKS(50));        
                 event = EVENT_BUTTON_1;
                 button_pressed = true;
             }
-        } else if (gpio_get_level(BUTTON_2) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(50));
+        } 
+        if (gpio_get_level(BUTTON_2) == 0) {
+            vTaskDelay(pdMS_TO_TICKS(20));
             if (gpio_get_level(BUTTON_2) == 0) {
                 event = EVENT_BUTTON_2;
                 button_pressed = true;
             }
-        } else if (gpio_get_level(BUTTON_3) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(50));
+        } 
+        if (gpio_get_level(BUTTON_3) == 0) {
+            vTaskDelay(pdMS_TO_TICKS(20));
             if (gpio_get_level(BUTTON_3) == 0) {
                 event = EVENT_BUTTON_3;
                 button_pressed = true;
             }
         }
-        else if (gpio_get_level(BUTTON_4) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(50));
+        if (gpio_get_level(BUTTON_4) == 0) {
+            vTaskDelay(pdMS_TO_TICKS(20));
             if (gpio_get_level(BUTTON_4) == 0) {
                 event = EVENT_BUTTON_4;
                 button_pressed = true;
@@ -51,21 +52,18 @@ void button_task(void *pvParameters) {
 
             event = EVENT_NO_KEY;
 
-        } else {
-            printf("Boton: %d\n", event);
-        }
-        
+        } 
+        //printf("Boton: %d\n", event);
         // Siempre enviamos el evento a la cola (mismo si no hubo tecla). Espera 10ms si la cola esta llena.
         button_data.button_event = event;
         button_data.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
         xQueueSend(central_queue, &button_data, pdMS_TO_TICKS(10));
         // ESP_LOGD(TAG_BTN, "Evento de boton enviado a la cola.");
-        printf("Evento de boton enviado a la cola.\n");
+        //printf("Evento de boton enviado a la cola.\n");
         // Retardo para "debounce" del boton, no enviar multiples eventos
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(200));
         
         button_pressed = false;
         
-        vTaskDelay(pdMS_TO_TICKS(50));  // Pequeño delay para debounce de botones
     }
 }
