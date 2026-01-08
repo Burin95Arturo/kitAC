@@ -105,7 +105,7 @@ void balanza_task(void *pvParameters){
     central_data_t peso_data;
     uint32_t received_request_id; 
     peso_data.origen = SENSOR_BALANZA;
-    
+    printf("Tarea balanza 1 iniciada.\n");
     while (1) {
         
 		/* Esperar notificación de Central */
@@ -118,7 +118,7 @@ void balanza_task(void *pvParameters){
 
             acu_raw_value += hx711_read_raw();
             // Esperar 100 ms entre lecturas
-            vTaskDelay(pdMS_TO_TICKS(100));
+           // vTaskDelay(pdMS_TO_TICKS(100));
         }
 
         peso_data.peso_raw1 = acu_raw_value / HX711_READ_ITERATIONS;
@@ -127,6 +127,8 @@ void balanza_task(void *pvParameters){
         if (xQueueSend(central_queue, &peso_data, pdMS_TO_TICKS(10)) != pdPASS) {
             // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
             printf("No se pudo enviar balanza 1 a la cola.\n");
+        } else {
+            printf("Raw 1=%ld\n", peso_data.peso_raw1);
         }
 
         // Resetear acumulador para la siguiente lectura

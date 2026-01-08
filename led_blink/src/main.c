@@ -116,12 +116,7 @@ void user_init(void) {
     ESP_LOGI(TAG_MSJ, "GPIO %d (HALL) configurado como entrada (PULL-UP habilitado).", HALL_PIN);
 
 
-    // // IR_PIN (Si es Open-Collector y necesita Pull-Up para estado HIGH)
-    io_conf.pin_bit_mask = (1ULL << IR_PIN);
-    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE; // <-- ¡MUY IMPORTANTE! Si tu sensor es open-collector y requiere pull-up.
-    gpio_config(&io_conf);
-    ESP_LOGI(TAG_MSJ, "GPIO %d (IR) configurado como entrada (PULL-UP habilitado).", IR_PIN);
+
 
     // HX711_DOUT_PIN (¡CRÍTICO! Es salida push-pull del HX711, NUNCA habilitar pull-up/down)
     io_conf.pin_bit_mask = (1ULL << HX711_DOUT_PIN);

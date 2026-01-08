@@ -51,6 +51,8 @@ void button_task(void *pvParameters) {
 
             event = EVENT_NO_KEY;
 
+        } else {
+            printf("Boton: %d\n", event);
         }
         
         // Siempre enviamos el evento a la cola (mismo si no hubo tecla). Espera 10ms si la cola esta llena.

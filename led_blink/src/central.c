@@ -71,14 +71,14 @@ void nuevo_central(void *pvParameters) {
                 */
                 // Enviamos el current_request_id como valor de notificación
                 xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);s
-                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                    xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                    xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                //    xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
                 //    xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
-                //    xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                    xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 2;
+                expected_responses = 5;
 
                 // Cuando se ingresa al estado por primera vez, esto es para solo 
                 // dibujar la pantalla de tests sin datos
@@ -108,7 +108,7 @@ void nuevo_central(void *pvParameters) {
         uint8_t received_count = 0;
 
         while (received_count < expected_responses) {
-            if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(500)) == pdTRUE) {
+            if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(1000)) == pdTRUE) {
                 
                 // === FILTRO DE SEGURIDAD === //
                 if (received_data.request_id != current_request_id) {
@@ -206,7 +206,7 @@ void nuevo_central(void *pvParameters) {
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(100)); 
+        vTaskDelay(pdMS_TO_TICKS(200)); 
 
 
     } // Fin del while(1)

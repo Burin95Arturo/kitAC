@@ -14,8 +14,8 @@
 
 // --- PARÁMETROS DE CALIBRACIÓN DE LAS BALANZAS ---
 // Calculados basándose en la tabla de datos y TARA
-#define TARA_BALANZA_1  160253  // Valor en vacío HX711 n.º 1
-#define TARA_BALANZA_2  507016  // Valor en vacío HX711 n.º 2
+#define TARA_BALANZA_1  192044  // Valor en vacío HX711 n.º 1
+#define TARA_BALANZA_2  509788  // Valor en vacío HX711 n.º 2
 
 // Factores de división (Cuentas por Kg)
 // K1 es menor porque las "patitas" absorben peso, generando menos cuentas por Kg real.
