@@ -32,16 +32,18 @@
 #define I2C_MASTER_SCL_IO           32
 #define I2C_MASTER_SDA_IO           13
 
+// Freno
+#define BREAK_PIN           GPIO_NUM_21     // Pin del LED externo  
+
+// Sensor de efecto Hall - Barandales
+#define HALL_PIN            GPIO_NUM_15      // Pin HALL
+
+//Faltan definir estos pines:
+
 // LEDs 
 #define LED_PIN             GPIO_NUM_10     // Pin del LED externo
 #define INTERNAL_LED_PIN    GPIO_NUM_2      // Led interno ESP32
 
 // Buzzer
 #define BUZZER_PIN          GPIO_NUM_0     // Pin del Buzzer 
-
-// Freno
-#define BREAK_PIN           GPIO_NUM_21     // Pin del LED externo  
-
-// Sensor de efecto Hall - Barandales
-#define HALL_PIN            GPIO_NUM_15      // Pin HALL
 
