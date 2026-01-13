@@ -91,7 +91,7 @@ void nuevo_central(void *pvParameters) {
                 break;
 
             case STATE_INICIAL:
-                /* Se piden datos a todos los sensores:
+                /* Se piden datos a estos sensores:
                 - Inclinación
                 - Barandales 
                 - Freno
@@ -191,27 +191,34 @@ void nuevo_central(void *pvParameters) {
                 if (estado_actual == STATE_INICIAL) {
                     // Evaluo el teclado para cambiar de estado
                     if (received_data.origen == BUTTON_EVENT) {
-                        if (received_data.button_event == EVENT_BUTTON_2){
+                        if (received_data.button_event == EVENT_BUTTON_1){
                             estado_actual = STATE_BALANZA_RESUMEN;
-                            break; 
+                            break;
 
-                        } else if (received_data.button_event == EVENT_BUTTON_1){
+                        } else if (received_data.button_event == EVENT_BUTTON_2){
                             estado_actual = STATE_APAGADO;
-                            break; 
+                            break;
                         }
-                    // Muestro por pantalla los valores recibidos de Altura, Freno y Barandas
-                    } else if (received_data.origen == SENSOR_ALTURA){
-                        display_data.data.altura = received_data.altura;
-                    } else if (received_data.origen == SENSOR_FRENO){
-                        display_data.data.freno_on_off = received_data.freno_on_off;
-                    } else if (received_data.origen == SENSOR_HALL){
-                        display_data.data.hall_on_off = received_data.hall_on_off;
+                    }
+                    // Evaluo barandales para cambiar de estado
+                    if (received_data.origen == SENSOR_HALL){
                         if (display_data.data.hall_on_off == 0){
                             // Si no se detecta baranda cambio al estado Alerta Barandales
                             estado_actual = STATE_ALERTA_BARANDALES;
                             break;
                         }
                     }
+                    // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
+                    if (received_data.origen == SENSOR_ACELEROMETRO  || received_data.origen == SENSOR_FRENO || received_data.origen == SENSOR_ALTURA) {
+                        display_data.data.inclinacion = received_data.inclinacion;
+                        display_data.data.freno_on_off = received_data.freno_on_off;
+                        display_data.data.altura = received_data.altura;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
+
+                    }
+
                 }
                 
             } else {
