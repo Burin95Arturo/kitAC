@@ -91,10 +91,26 @@ void nuevo_central(void *pvParameters) {
                 break;
 
             case STATE_INICIAL:
-                // En Estado A, pedimos datos a sensores 1, 2 y 3
-                // Enviamos el current_request_id como valor de notificación
-                // En Estado B, quizás solo pedimos al sensor 4 y 5
-                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                /* Se piden datos a estos sensores:
+                - Inclinación
+                - Barandales 
+                - Freno
+                - Altura
+                - Teclado
+                */
+                xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 5;
+
+                display_data.contains_data = false; 
+                display_data.pantalla = INICIAL;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
                 break;
 
                 default:
@@ -173,17 +189,36 @@ void nuevo_central(void *pvParameters) {
                 }
                 
                 if (estado_actual == STATE_INICIAL) {
-                     if (received_data.peso_total > 50.0) {
-                         // El sensor 2 dispara el cambio.
-                         // Nota: Aún faltaba leer el sensor 3, pero al hacer break aquí,
-                         // salimos del while, el loop principal da la vuelta,
-                         // current_request_id se incrementa, y cuando el sensor 3 
-                         // finalmente escriba en la cola (o si ya escribió), 
-                         // su mensaje tendrá el ID viejo y será descartado en el futuro.
-                         
-                         estado_actual = STATE_PESANDO;
-                         break; // Salimos del loop de recepción para cambiar de estado
-                     }
+                    // Evaluo el teclado para cambiar de estado
+                    if (received_data.origen == BUTTON_EVENT) {
+                        if (received_data.button_event == EVENT_BUTTON_1){
+                            estado_actual = STATE_BALANZA_RESUMEN;
+                            break;
+
+                        } else if (received_data.button_event == EVENT_BUTTON_2){
+                            estado_actual = STATE_APAGADO;
+                            break;
+                        }
+                    }
+                    // Evaluo barandales para cambiar de estado
+                    if (received_data.origen == SENSOR_HALL){
+                        if (display_data.data.hall_on_off == 0){
+                            // Si no se detecta baranda cambio al estado Alerta Barandales
+                            estado_actual = STATE_ALERTA_BARANDALES;
+                            break;
+                        }
+                    }
+                    // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
+                    if (received_data.origen == SENSOR_ACELEROMETRO  || received_data.origen == SENSOR_FRENO || received_data.origen == SENSOR_ALTURA) {
+                        display_data.data.inclinacion = received_data.inclinacion;
+                        display_data.data.freno_on_off = received_data.freno_on_off;
+                        display_data.data.altura = received_data.altura;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
+
+                    }
+
                 }
                 
             } else {
@@ -202,7 +237,7 @@ void nuevo_central(void *pvParameters) {
                 estado_actual = STATE_TESTS;
                 flag_tests = false;
             } else {                        
-            estado_actual = STATE_INICIAL; 
+                estado_actual = STATE_INICIAL; 
             }
         }
 
