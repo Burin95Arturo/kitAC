@@ -233,7 +233,7 @@ void display_tft_task(void *pvParameters) {
             switch (received_data.pantalla)
             {
             case TESTS:
-                /* code */
+                //------------------------Pantalla TESTS------------------------//
                 if (pantalla_actual != TESTS) {
                     pantalla_actual = TESTS;
                     //Dibujar campos pantalla TESTS completa//
@@ -372,7 +372,7 @@ void display_tft_task(void *pvParameters) {
                                 teclado_num = 8;
                                 break;
                             default:
-                                teclado_num = 8;
+                                teclado_num = 0;
                                 break;
                             }   
 
@@ -393,55 +393,148 @@ void display_tft_task(void *pvParameters) {
 
                 } // Fin if contiene datos
 
-                break; //Fin case TESTS
+                break; //Fin case pantalla TESTS
 
             case INICIAL:
-                /* code */
+
+                //------------------------Pantalla Inicial------------------------//
+
                 if (pantalla_actual != INICIAL) {
                     pantalla_actual = INICIAL;
-                //--------Pantalla Inicial--------//
-                //ESTAS VARIABLES SON DE PRUEBA, LUEGO VAN A VENIR DE LA COLA
-                    //Barra superior de indicación de freno    
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                    //Dibujar campos pantalla INICIAL completa//
+                    //--------Campos Pantalla INICIAL--------//
 
-                    //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
                     //Iconito de grados
-                    lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", AZUL_OCEANO);
                     lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
-                        lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
+                    lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
 
                     //Iconito de altura
-                    lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
-                    lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
-                        lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
-                        lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
-
+                    lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
+                    lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
 
                     //Barra inferior con opciones
                     lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
-
                         lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
                         lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
-                    
-                    lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
-                    lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
+                        lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
 
-                    vTaskDelay(pdMS_TO_TICKS(5000));  
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
-                    lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
-                    vTaskDelay(pdMS_TO_TICKS(5000));
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
-                //--------Fin Pantalla Inicial--------//
+
+
+                        //moveme la barra
+
+
+
+
+                        //posicion según altura ejemplo
+                        lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+                        lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
+
+                        vTaskDelay(pdMS_TO_TICKS(5000));  
+
+                        vTaskDelay(pdMS_TO_TICKS(5000));
+                        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+                        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+
+                //--------Fin Campos Pantalla Inicial--------//
                 }
-                break;  
+                //--------Actualizar datos Pantalla INICIAL--------//
+                
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
+
+                    switch (received_data.data.origen)
+                    {
+                        case SENSOR_ACELEROMETRO:
+                        //Campo con ángulo
+                        angulo = (u_int8_t)round(received_data.data.inclinacion);
+                        if (angulo < 0) angulo = angulo * -1; //Valor absoluto
+                        if (angulo != angulo_prev) {
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);
+                            sprintf(string_angulo, "%d", angulo);
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                            angulo_prev = angulo;
+                        }
+                        break;
+
+                        case SENSOR_FRENO:
+                        //Barra superior de indicación de freno    
+                        freno_ok = received_data.data.freno_on_off;
+                        if (freno_ok != freno_ok_prev) {
+                            if (freno_ok) {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+                                lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                            } else {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                                lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+                            }
+                            freno_ok_prev = freno_ok;
+                        }
+
+                        case SENSOR_ALTURA:
+
+                        //ACÁ FALTARIA DEFINIR EL THRESHOLD DE ALTURA PARA INDICAR POSICIÓN SEGURA O NO, Y MODIFICAR EN CONSECUENCIA
+
+                        //ALTURA
+                        altura = (u_int8_t)round(received_data.data.altura);
+                        if (altura != altura_prev) {
+                            lcdDrawFillRect(&dev, 197, 154, 216, 198, WHITE);
+                            sprintf(string_altura, "%d", altura);   
+                            lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
+                            altura_prev = altura;        
+                        }
+
+                        break;
+
+                        case BUTTON_EVENT:
+                            //TECLADO
+                            switch (received_data.data.button_event)
+                            {
+                            case EVENT_BUTTON_1:
+                                teclado_num = 1;
+                                break;
+                            
+                            case EVENT_BUTTON_2:
+                                teclado_num = 2;    
+                                break;
+
+                            case EVENT_BUTTON_3:
+                                teclado_num = 3;    
+                                break;
+
+                            case EVENT_BUTTON_4:
+                                teclado_num = 4;    
+                                break;
+
+                            case EVENT_NO_KEY:
+                                teclado_num = 8;
+                                break;
+                            default:
+                                teclado_num = 0;
+                                break;
+                            }   
+
+                            if (teclado_num != teclado_num_prev) {
+                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, WHITE);
+                                sprintf(string_teclado, "%d", teclado_num);
+                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
+                                teclado_num_prev = teclado_num;
+                            }
+                        break;
+                    
+                        default:
+                        break;
+
+                        //--------Fin actualizar datos Pantalla INICIAL--------//
+                    
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+                break;  //Fin case pantalla INICIAL
 
             case BALANZA:
                 /* code */
