@@ -111,10 +111,78 @@ void nuevo_central(void *pvParameters) {
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
-                break;
+            break;
 
-                default:
-                break;
+            case STATE_ALERTA_BARANDALES:
+                /* No se piden datos.
+                */
+
+                expected_responses = 0;
+                flag_tests = false;
+
+                display_data.contains_data = false; 
+                display_data.pantalla = INICIAL;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_APAGADO:
+                /* Se piden datos a todos los sensores:
+                - Teclado
+                */
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 1;
+                
+                display_data.contains_data = true; 
+                display_data.pantalla = APAGADO;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_ERROR_CABECERA:
+                /* No se piden datos
+                */
+                expected_responses = 0;
+                
+                display_data.contains_data = false; 
+                display_data.pantalla = ERROR_CABECERA;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_BALANZA_RESUMEN:
+                /* Se piden datos a todos los sensores:     
+                - Inclinación
+                - Balanza 1
+                - Balanza 2
+                - Barandales 
+                - Freno
+                - Altura
+                - Teclado
+                */
+                // Enviamos el current_request_id como valor de notificación
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 5;
+                flag_tests = true; // Para que vuelva a este estado desde Alerta Baranda
+
+                display_data.contains_data = true; 
+                display_data.pantalla = BALANZA;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            default:
+            break;
         }
 
         // --- LÓGICA DE ESPERA Y PROCESAMIENTO --- //
@@ -220,6 +288,70 @@ void nuevo_central(void *pvParameters) {
                     }
 
                 }
+
+                if (estado_actual == STATE_ERROR_CABECERA) {
+                    // No se hace nada 
+                }
+
+                if (estado_actual == STATE_APAGADO) {
+                    // Apago la pantalla
+
+                    // Evaluo los botones
+                    if (received_data.origen == BUTTON_EVENT) {
+                        // Vuelvo al estado inicial
+                        estado_actual = STATE_INICIAL;
+                    } 
+                }
+
+                if (estado_actual == STATE_AJUSTE_CERO) {
+                    if (received_data.origen == BUTTON_EVENT) {
+                        if (received_data.button_event == EVENT_BUTTON_1){
+                            // Voy para atras 
+                            estado_actual = STATE_BALANZA_RESUMEN;
+                        }
+                    } 
+                    
+                    if (received_data.inclinacion != 0) {
+                        estado_actual = STATE_ERROR_CABECERA;
+                    } else {
+                        // Rutina de conseguir el cero
+                    }
+                }
+
+                if (estado_actual == STATE_BALANZA_RESUMEN) {
+                    // Evaluo los botones
+                    if (received_data.origen == BUTTON_EVENT) {
+                        if (received_data.button_event == EVENT_BUTTON_1){
+                            // Voy al estado de pesaje o si el angulo no es 0 grados al estado de error
+                            // Tambien por seguridad se evalua el estado del freno tiene que estar activado
+                            if(received_data.inclinacion == 0 || received_data.freno_on_off == true){
+                                estado_actual = STATE_PESANDO;
+                            } else {
+                                estado_actual = STATE_ERROR_CABECERA;
+                            }
+                            break; 
+
+                        } else if (received_data.button_event == EVENT_BUTTON_2){
+                            // Guardo el dato en memoria
+                            break; 
+                        }
+                        else if (received_data.button_event == EVENT_BUTTON_3){
+                            // Voy a ajustar el cero
+                            estado_actual = STATE_AJUSTE_CERO;
+                            break; 
+                        }
+                        else if (received_data.button_event == EVENT_BUTTON_4){
+                            // Retorno al estado anterior
+                            estado_actual = STATE_INICIAL;
+                            break; 
+                        }
+                    }
+
+                    if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                        printf("Error enviando datos en pantalla TESTS.\n");
+
+                    }
+                }
                 
             } else {
                 // Timeout esperando sensores
@@ -241,6 +373,54 @@ void nuevo_central(void *pvParameters) {
             }
         }
 
+        // Transicionan después de un tiempo mostrando el Alerta Baranda
+        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
+        // Uso dicho flag para saber de donde vino y a donde retorno desde Alerta Baranda
+        // flag_test = false -> vino desde STATE_INICIAL
+        // flag_test = true -> vino desde BALANZA_RESUMEN 
+        if (estado_actual == STATE_ALERTA_BARANDALES) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            
+            if (flag_tests) {
+                estado_actual = STATE_BALANZA_RESUMEN;
+            } else {                        
+                estado_actual = STATE_INICIAL; 
+            }
+        }
+
+        // Transicionan después de un tiempo mostrando el Error Cabecera
+        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
+        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
+        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
+        // flag_test = true -> vino desde STATE_AJUSTE_CERO 
+        if (estado_actual == STATE_ERROR_CABECERA) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            
+            if (flag_tests) {
+                estado_actual = STATE_AJUSTE_CERO;
+            } else {                        
+                estado_actual = STATE_BALANZA_RESUMEN; 
+            }
+        }
+
+        // Transicionan después de un tiempo mostrando el Ajuste Cero
+        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
+        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
+        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
+        // flag_test = true -> No existe tal opcion. Solo viene desde STATE_BALANZA_RESUMEN
+        // Pero podria utilizarse como resultado erroneo. 
+        if (estado_actual == STATE_AJUSTE_CERO) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+
+            // Evaluar si el resultado de hacer cero fue exitoso para ver que hacer
+            if (!flag_tests) {
+                // Vuelvo a BALANZA_RESUMEN
+                estado_actual = STATE_BALANZA_RESUMEN;
+            } else {
+                // Evaluar que hacer en caso de error
+            }
+        }
+        
         vTaskDelay(pdMS_TO_TICKS(200)); 
 
 

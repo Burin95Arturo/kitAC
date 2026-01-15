@@ -105,7 +105,10 @@ typedef enum {
     INICIAL, 
     BALANZA,
     TESTS,
-    CONFIGURACION
+    CONFIGURACION,
+    APAGADO, 
+    ERROR_CABECERA, 
+    AJUSTE_CERO
 } pantallas_t;
 
 typedef struct {
@@ -124,7 +127,7 @@ typedef enum {
     STATE_BALANZA_RESUMEN,
     STATE_PESANDO,
     STATE_ERROR_CABECERA,
-    STATTE_AJUSTE_CERO,    
+    STATE_AJUSTE_CERO,    
     // ... otros estados
 } estados_central_t;
 
