@@ -347,12 +347,42 @@ void nuevo_central(void *pvParameters) {
                         }
                     }
 
-                    if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                        printf("Error enviando datos en pantalla TESTS.\n");
-
+                    if (received_data.origen == SENSOR_FRENO) {
+                        display_data.data.freno_on_off = received_data.freno_on_off;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
                     }
                 }
-                
+
+                if (estado_actual == STATE_PESANDO) {
+                    // Evaluo el teclado para cambiar de estado
+                    if (received_data.origen == BUTTON_EVENT) {
+                        if (received_data.button_event == EVENT_BUTTON_2){
+                            // Guardo el valor del peso
+                            break;
+
+                        } else if (received_data.button_event == EVENT_BUTTON_3){
+                            // Cero? Evaluar diagrama
+                            break;
+
+                        } else if (received_data.button_event == EVENT_BUTTON_4){
+                            // Vuelvo atras
+                            estado_actual = STATE_BALANZA_RESUMEN;
+                            break;
+
+                        }
+                    }
+
+                    if (received_data.origen == CALCULO_PESO) {
+                        // Envio el valor del peso a display.
+                        display_data.data.peso_total = received_data.peso_total;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
+                    }
+                }
+
             } else {
                 // Timeout esperando sensores
                 break; 
@@ -413,6 +443,19 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
             // Evaluar si el resultado de hacer cero fue exitoso para ver que hacer
+            if (!flag_tests) {
+                // Vuelvo a BALANZA_RESUMEN
+                estado_actual = STATE_BALANZA_RESUMEN;
+            } else {
+                // Evaluar que hacer en caso de error
+            }
+        }
+
+        // Misma logica de Ajuste Cero para cuando esta pesando.
+        if (estado_actual == STATE_PESANDO) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+
+            // Evaluar si el resultado del pesaje fue exitoso para ver que hacer
             if (!flag_tests) {
                 // Vuelvo a BALANZA_RESUMEN
                 estado_actual = STATE_BALANZA_RESUMEN;
