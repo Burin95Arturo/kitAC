@@ -159,16 +159,14 @@ void display_tft_task(void *pvParameters) {
     int8_t angulo_prev=37;
     char string_angulo[5];
 
-    float peso = 55.5;
-    float peso_prev = 55.5;
     char string_peso[8]; //Espacio para poder poner "-100.00" + NULL
 
     bool barandales_arriba = true;
-    bool barandales_arriba_prev = true;
+    bool barandales_arriba_prev = false;
     char string_barandales[7];
 
     bool freno_ok = true;
-    bool freno_ok_prev = true;
+    bool freno_ok_prev = false;
     char string_freno[4];
 
     uint8_t teclado_num = 1;
@@ -233,7 +231,7 @@ void display_tft_task(void *pvParameters) {
             switch (received_data.pantalla)
             {
             case TESTS:
-                //------------------------Pantalla TESTS------------------------//
+//--------------------------------------Pantalla TESTS--------------------------------------//
                 if (pantalla_actual != TESTS) {
                     pantalla_actual = TESTS;
                     //Dibujar campos pantalla TESTS completa//
@@ -393,11 +391,12 @@ void display_tft_task(void *pvParameters) {
 
                 } // Fin if contiene datos
 
-                break; //Fin case pantalla TESTS
+                break; 
+//--------------------------------------Fin case pantalla TESTS--------------------------------//
 
             case INICIAL:
 
-                //------------------------Pantalla Inicial------------------------//
+//--------------------------------------Pantalla Inicial--------------------------------------//
 
                 if (pantalla_actual != INICIAL) {
                     pantalla_actual = INICIAL;
@@ -422,24 +421,6 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
                     lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
-
-
-
-                        //moveme la barra
-
-
-
-
-                        //posicion según altura ejemplo
-                        lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
-                        lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
-
-                        vTaskDelay(pdMS_TO_TICKS(5000));  
-
-                        vTaskDelay(pdMS_TO_TICKS(5000));
-                        lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                        lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
-
                 //--------Fin Campos Pantalla Inicial--------//
                 }
                 //--------Actualizar datos Pantalla INICIAL--------//
@@ -476,57 +457,24 @@ void display_tft_task(void *pvParameters) {
                         }
 
                         case SENSOR_ALTURA:
-
-                        //ACÁ FALTARIA DEFINIR EL THRESHOLD DE ALTURA PARA INDICAR POSICIÓN SEGURA O NO, Y MODIFICAR EN CONSECUENCIA
-
-                        //ALTURA
                         altura = (u_int8_t)round(received_data.data.altura);
                         if (altura != altura_prev) {
-                            lcdDrawFillRect(&dev, 197, 154, 216, 198, WHITE);
-                            sprintf(string_altura, "%d", altura);   
-                            lcdDrawString(&dev, Cons32fx, 222, 200, (uint8_t *)&string_altura, BLACK);
+
+                            if (altura < ALTURA_SEGURA_MIN_CM) {
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", WHITE);
+                                lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", WHITE);
+                            } else {
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", RED);
+                                lcdDrawString(&dev, Cons32fx, 180, 175, (uint8_t *)"NO SEGURA", RED);
+                                //Acá faltaría la parte de cambiar la imagen del tick por una cruz roja
+                            }
                             altura_prev = altura;        
                         }
 
                         break;
-
-                        case BUTTON_EVENT:
-                            //TECLADO
-                            switch (received_data.data.button_event)
-                            {
-                            case EVENT_BUTTON_1:
-                                teclado_num = 1;
-                                break;
-                            
-                            case EVENT_BUTTON_2:
-                                teclado_num = 2;    
-                                break;
-
-                            case EVENT_BUTTON_3:
-                                teclado_num = 3;    
-                                break;
-
-                            case EVENT_BUTTON_4:
-                                teclado_num = 4;    
-                                break;
-
-                            case EVENT_NO_KEY:
-                                teclado_num = 8;
-                                break;
-                            default:
-                                teclado_num = 0;
-                                break;
-                            }   
-
-                            if (teclado_num != teclado_num_prev) {
-                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, WHITE);
-                                sprintf(string_teclado, "%d", teclado_num);
-                                lcdDrawString(&dev, Cons32fx, 192, 190, (uint8_t *)string_teclado, BLUE);
-                                teclado_num_prev = teclado_num;
-                            }
-                        break;
                     
                         default:
+                            printf("No se pudo procesar el dato para pantalla INICIAL.\n");
                         break;
 
                         //--------Fin actualizar datos Pantalla INICIAL--------//
@@ -534,12 +482,27 @@ void display_tft_task(void *pvParameters) {
                     } //Fin switch origen
 
                 } // Fin if contiene datos
-                break;  //Fin case pantalla INICIAL
+                break;  
+//--------------------------------------Fin case pantalla INICIAL------------------------------//
 
-            case BALANZA:
+            case APAGADA:
+
+//--------------------------------------Pantalla Apagada--------------------------------------//
+
+                if (pantalla_actual != APAGADA) {
+                    pantalla_actual = APAGADA;
+                    lcdFillScreen(&dev, BLACK);
+                    //Si está disponible, apagar el backlight
+
+                }
+                break;  //Fin case pantalla 
+//--------------------------------------Fin case pantalla APAGADA----------------------------//
+   
+
+            case BALANZA_RESUMEN:
                 /* code */
-                if (pantalla_actual != BALANZA) {
-                    pantalla_actual = BALANZA;
+                if (pantalla_actual != BALANZA_RESUMEN) {
+                    pantalla_actual = BALANZA_RESUMEN;
                     //Dibujar campos pantalla BALANZA//
                     //--------Campos Pantalla Balanza--------//
                         lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);

@@ -17,9 +17,9 @@ void break_task(void *pvParameters) {
 		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
 
         // Leer el estado de los botones
-        if (gpio_get_level(BREAK_PIN) == 0) {
+        if (gpio_get_level(BREAK_PIN) == NIVEL_FRENO_ACTIVADO) {
             vTaskDelay(pdMS_TO_TICKS(20));
-            if (gpio_get_level(BREAK_PIN) == 0) {
+            if (gpio_get_level(BREAK_PIN) == NIVEL_FRENO_ACTIVADO) {
                 button_pressed = true;
             }
         }
@@ -29,7 +29,7 @@ void break_task(void *pvParameters) {
         xQueueSend(central_queue, &break_data, pdMS_TO_TICKS(10));
         // ESP_LOGD(TAG_BTN, "Evento de boton enviado a la cola.");
         //printf("Evento de freno enviado a la cola.\n");
-        printf("Freno: %d\n", button_pressed);
+        //printf("Freno: %d\n", button_pressed);
         // Retardo para "debounce" del boton, no enviar multiples eventos
         vTaskDelay(pdMS_TO_TICKS(200));
         button_pressed = false;

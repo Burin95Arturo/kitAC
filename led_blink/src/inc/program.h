@@ -25,6 +25,12 @@
 // Umbral mínimo para mostrar peso (filtro de ruido)
 #define PESO_MINIMO_KG  2.0f
 
+// Umbral mínimo para indicar posición segura (altura en unidades del sensor)
+#define ALTURA_SEGURA_MIN_CM  40  // Ajustable según cama
+
+// Nivel para detección de freno activado (botón presionado)
+#define NIVEL_FRENO_ACTIVADO  0  // Ajustable según conexión física
+
 typedef enum {
     EVENT_BUTTON_1=1,
     EVENT_BUTTON_2,
@@ -102,8 +108,9 @@ typedef struct {
 
 typedef enum {
     BIENVENIDA=0,
+    APAGADA,
     INICIAL, 
-    BALANZA,
+    BALANZA_RESUMEN,
     TESTS,
     CONFIGURACION
 } pantallas_t;
