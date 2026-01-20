@@ -49,7 +49,8 @@ void nuevo_central(void *pvParameters) {
     static long cuentas_raw_b2 = 0;
 
     while (1) {
-        // --- LÓGICA DE ENTRADA AL ESTADO --- //
+
+        // --------------------- BLOQUE 1: LÓGICA DE ENTRADA Y REPETICIÓN DEL ESTADO --------------------- //
         
         // Incrementamos el ID cada vez que pedimos nuevos datos.
         // Esto invalida automáticamente cualquier dato viejo en la cola.
@@ -179,7 +180,7 @@ void nuevo_central(void *pvParameters) {
                 flag_tests = true; // Para que vuelva a este estado desde Alerta Baranda
 
                 display_data.contains_data = true; 
-                display_data.pantalla = BALANZA;
+                display_data.pantalla = BALANZA_RESUMEN;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
@@ -187,9 +188,11 @@ void nuevo_central(void *pvParameters) {
 
             default:
             break;
-        }
+        } //Fin switch (estado_actual)
 
-        // --- LÓGICA DE ESPERA Y PROCESAMIENTO --- //
+        // --------------------- FIN BLOQUE 1: LÓGICA DE ENTRADA Y REPETICIÓN DEL ESTADO --------------------- //
+
+        // --------------------- BLOQUE 2: LÓGICA DE ESPERA Y PROCESAMIENTO ---------------------------------- //
         
         // Esperamos datos en cola.
         // Implementamos un timeout para no bloquearnos por siempre.
@@ -198,7 +201,7 @@ void nuevo_central(void *pvParameters) {
         while (received_count < expected_responses) {
             if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(1000)) == pdTRUE) {
                 
-                // === FILTRO DE SEGURIDAD === //
+                // ============================= FILTRO DE SEGURIDAD ======================================== //
                 if (received_data.request_id != current_request_id) {
                     // Esto permite descartar datos viejos (solicitudes anteriores) que hayan quedado en la cola
                     ESP_LOGW("CENTRAL", "Descartando dato viejo del sensor %d (Batch %lu vs Actual %lu)", 
@@ -210,19 +213,16 @@ void nuevo_central(void *pvParameters) {
                 received_count++;
 
 
-                // === CALCULO DE PESO (para los estados que lo necesiten) === //
-
+                // =========== CALCULO DE PESO (para los estados que lo necesiten) ========================== //
                 // Para las balanzas, se deben tomar datos de ambas para calcular el peso total
                 if (received_data.origen == SENSOR_BALANZA){
                     cuentas_raw_b1 = received_data.peso_raw1;
                     flag_balanza1 = true;
-                }
-                    
+                }         
                 if (received_data.origen == SENSOR_BALANZA_2) {
                     cuentas_raw_b2 = received_data.peso_raw1;
                     flag_balanza2 = true;
                 }
-
                 if (flag_balanza1 && flag_balanza2) {
                     // Calcular peso total
                     received_data.peso_total = calcular_peso(cuentas_raw_b1, cuentas_raw_b2);
@@ -231,8 +231,9 @@ void nuevo_central(void *pvParameters) {
                     flag_balanza2 = false;
                     flag_peso_calculado = true;
                 }
+                // ============================= Fin CALCULO DE PESO ======================================== //
 
-                // === FLAG SI CABECERA ESTÁ EN HORIZONTAL === //
+                // ====================== FLAG CABECERA EN HORIZONTAL ======================================= //
                 if (received_data.origen == SENSOR_ACELEROMETRO) {
 
                     if (fabs(received_data.inclinacion) > ANGULO_MAXIMO_PERMITIDO) {
@@ -241,10 +242,15 @@ void nuevo_central(void *pvParameters) {
                     } else {
                         cabecera_en_horizontal = true;
                     }
-                }   
+                }
+                // ====================== Fin FLAG CABECERA EN HORIZONTAL =================================== //
+   
+                // --------------------- BLOQUE 2.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN ---------------------------------- //
 
-                // --- ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN --- //
-                // Los break son para salir del while de recepción y cambiar al siguiente estado.          
+                // Según el estado actual, se envían datos a la pantalla o se hacen transiciones.
+                // Los break son para salir del while de recepción y cambiar al siguiente estado.
+                
+                /************************************** Estado TESTS *****************************************/
                 if (estado_actual == STATE_TESTS) {
                     // Enviamos los datos recibidos a la cola del display
                     display_data.contains_data = true;
@@ -268,9 +274,9 @@ void nuevo_central(void *pvParameters) {
 
                     }
                     // TESTS no transiciona, queda siempre en este estado
-
-                }
+                } // FIN ESTADO TESTS
                 
+                /************************************** Estado INICIAL *****************************************/
                 if (estado_actual == STATE_INICIAL) {
                     // Evaluo el teclado para cambiar de estado
                     if (received_data.origen == BUTTON_EVENT) {
@@ -297,7 +303,6 @@ void nuevo_central(void *pvParameters) {
                         display_data.contains_data = true;
                         display_data.pantalla = INICIAL;
                         display_data.data.origen = received_data.origen;   
-                        display_data.data.origen = received_data.origen;
                         display_data.data.inclinacion = received_data.inclinacion;
                         display_data.data.freno_on_off = received_data.freno_on_off;
                         display_data.data.altura = received_data.altura;
@@ -311,18 +316,20 @@ void nuevo_central(void *pvParameters) {
                         //           display_data.data.freno_on_off,
                         //           display_data.data.altura,
                         //           display_data.data.origen);
-//
+
                         //    }
                         
 
                     }
 
-                }
+                } //FIN ESTADO INICIAL
 
+                /************************************** Estado ERROR_CABECERA ***************************************/
                 if (estado_actual == STATE_ERROR_CABECERA) {
                     // No se hace nada 
                 }
 
+                 /************************************** Estado APAGADO ********************************************/
                 if (estado_actual == STATE_APAGADO) {
                     // Apago la pantalla
 
@@ -336,6 +343,7 @@ void nuevo_central(void *pvParameters) {
                     } 
                 }
 
+                /************************************** Estado AJUSTE_CERO ****************************************/
                 if (estado_actual == STATE_AJUSTE_CERO) {
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
@@ -352,6 +360,7 @@ void nuevo_central(void *pvParameters) {
                     }
                 }
 
+                /************************************** Estado BALANZA_RESUMEN ***********************************/
                 if (estado_actual == STATE_BALANZA_RESUMEN) {
                     // Evaluo los botones
                     if (received_data.origen == BUTTON_EVENT) {
@@ -392,12 +401,15 @@ void nuevo_central(void *pvParameters) {
 
                     if (received_data.origen == SENSOR_FRENO) {
                         display_data.data.freno_on_off = received_data.freno_on_off;
+                        display_data.contains_data = true;
+                        display_data.pantalla = BALANZA_RESUMEN;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla INICIAL.\n");
+                                printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
                         }
                     }
-                }
+                } //FIN ESTADO BALANZA_RESUMEN
 
+                /************************************** Estado PESANDO ***************************************/
                 if (estado_actual == STATE_PESANDO) {
                     // Evaluo el teclado para cambiar de estado
                     if (received_data.origen == BUTTON_EVENT) {
@@ -420,20 +432,27 @@ void nuevo_central(void *pvParameters) {
                     if (received_data.origen == CALCULO_PESO) {
                         // Envio el valor del peso a display.
                         display_data.data.peso_total = received_data.peso_total;
+                        display_data.contains_data = true;
+                        display_data.pantalla = PESANDO;
+                        display_data.data.origen = CALCULO_PESO;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla INICIAL.\n");
+                                printf("Error enviando datos en pantalla PESANDO.\n");
                         }
                     }
-                }
+                } // Fin ESTADO PESANDO
+
 
             } else {
-                // Timeout esperando sensores
+                // Si no se leyó datos en la cola y se cumplió el timeout esperando sensores
                 break; 
             }
+            // ------------ FIN BLOQUE 2.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN -------------- //
+
         } // Fin del while de recepción
         
-        
-        // --- ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA --- //
+
+        // --------------------- BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
+
         // Transicionan solos después de un tiempo 
         if (estado_actual == STATE_BIENVENIDA) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
@@ -445,25 +464,11 @@ void nuevo_central(void *pvParameters) {
                 estado_actual = STATE_INICIAL; 
             }
         }
-
-        // Transicionan después de un tiempo mostrando el Alerta Baranda
-        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
-        // Uso dicho flag para saber de donde vino y a donde retorno desde Alerta Baranda
-        // flag_test = false -> vino desde STATE_INICIAL
-        // flag_test = true -> vino desde BALANZA_RESUMEN 
         if (estado_actual == STATE_ALERTA_BARANDALES) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
             estado_actual = estado_anterior;
         }
-
-        }
-
-        // Transicionan después de un tiempo mostrando el Error Cabecera
-        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
-        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
-        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
-        // flag_test = true -> vino desde STATE_AJUSTE_CERO 
         if (estado_actual == STATE_ERROR_CABECERA) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
@@ -471,39 +476,19 @@ void nuevo_central(void *pvParameters) {
 
         }
 
-        // Transicionan después de un tiempo mostrando el Ajuste Cero
-        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
-        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
-        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
-        // flag_test = true -> No existe tal opcion. Solo viene desde STATE_BALANZA_RESUMEN
-        // Pero podria utilizarse como resultado erroneo. 
+        // FALTA DESARROLLAR AJUSTE_CERO Y SU TRANSICIÓN
         if (estado_actual == STATE_AJUSTE_CERO) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-
-            // Evaluar si el resultado de hacer cero fue exitoso para ver que hacer
-            if (!flag_tests) {
-                // Vuelvo a BALANZA_RESUMEN
-                estado_actual = STATE_BALANZA_RESUMEN;
-            } else {
-                // Evaluar que hacer en caso de error
-            }
+             
+            // Evaluar que hacer en caso de error
+            
         }
 
-        // Misma logica de Ajuste Cero para cuando esta pesando.
-        if (estado_actual == STATE_PESANDO) {
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+        // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
-            // Evaluar si el resultado del pesaje fue exitoso para ver que hacer
-            if (!flag_tests) {
-                // Vuelvo a BALANZA_RESUMEN
-                estado_actual = STATE_BALANZA_RESUMEN;
-            } else {
-                // Evaluar que hacer en caso de error
-            }
-        }
-        
-        vTaskDelay(pdMS_TO_TICKS(200)); 
 
+        /*********** Demora general para el bucle completo ********************/
+        vTaskDelay(pdMS_TO_TICKS(100)); 
 
     } // Fin del while(1)
 

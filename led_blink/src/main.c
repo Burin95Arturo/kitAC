@@ -12,7 +12,6 @@
 #include "inc/ir.h"
 #include "inc/balanza.h"
 #include "inc/buttons.h"
-#include "inc/display_lcd.h"
 #include "inc/display_tft.h"
 #include "inc/balanza_2.h"
 #include "inc/program.h"
@@ -251,7 +250,6 @@ void user_init(void) {
     xTaskCreate(&nuevo_central, "nuevo_central_task", 2048, NULL, 1, NULL); // Pila de 2K
     //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
     xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, &inclinacion_task_handle);
-    //antes de habilitar display TFT, estructurar los semáforos y colas necesarias
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 

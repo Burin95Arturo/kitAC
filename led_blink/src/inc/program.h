@@ -117,7 +117,8 @@ typedef enum {
     TESTS,
     CONFIGURACION,
     APAGADO, 
-    ERROR_CABECERA, 
+    ERROR_CABECERA,
+    PESANDO, 
     AJUSTE_CERO
 } pantallas_t;
 

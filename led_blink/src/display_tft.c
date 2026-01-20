@@ -252,7 +252,6 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 100, 295, (uint8_t *)"BALANZA:", AZUL_OCEANO);
                         lcdDrawString(&dev, ilgh24fx, 100, 103, (uint8_t *)"kg", VERDE_OSCURO);
 
-
                         //BARANDALES
                         lcdDrawString(&dev, ilgh24fx, 130, 295, (uint8_t *)"BARANDALES:", AZUL_OCEANO);
                         strcpy(string_barandales, "ARRIBA"); //Sólo para inicializar
@@ -261,11 +260,9 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 160, 295, (uint8_t *)"FRENO:", AZUL_OCEANO);
                         strcpy(string_freno, "OK"); //Sólo para inicializar
 
-
                         //TECLADO
                         lcdDrawString(&dev, ilgh24fx, 190, 295, (uint8_t *)"TECLADO:", AZUL_OCEANO);
                         sprintf(string_teclado, "%d", teclado_num); //Sólo para inicializar
-
 
                         //ALTURA
                         lcdDrawString(&dev, ilgh24fx, 220, 295, (uint8_t *)"ALTURA:", AZUL_OCEANO);
