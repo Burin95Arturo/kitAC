@@ -28,7 +28,7 @@ float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
 
 void nuevo_central(void *pvParameters) {
 
-    static bool flag_tests = true;
+    static bool flag_tests = false;
     static bool flag_balanza1 = false;
     static bool flag_balanza2 = false;
     static bool flag_peso_calculado = false;
@@ -103,12 +103,12 @@ void nuevo_central(void *pvParameters) {
                 - Teclado
                 */
                 xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                //xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                //xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                //xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 5;
+                expected_responses = 2;
 
                 display_data.contains_data = false; 
                 display_data.pantalla = INICIAL;
@@ -294,6 +294,9 @@ void nuevo_central(void *pvParameters) {
                     }
                     // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
                     if (received_data.origen == SENSOR_ACELEROMETRO  || received_data.origen == SENSOR_FRENO || received_data.origen == SENSOR_ALTURA) {
+                        display_data.contains_data = true;
+                        display_data.pantalla = INICIAL;
+                        display_data.data.origen = received_data.origen;   
                         display_data.data.origen = received_data.origen;
                         display_data.data.inclinacion = received_data.inclinacion;
                         display_data.data.freno_on_off = received_data.freno_on_off;
@@ -301,6 +304,16 @@ void nuevo_central(void *pvParameters) {
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
                                 printf("Error enviando datos en pantalla INICIAL.\n");
                         }
+                        // Datos enviados correctamente
+                        //else {
+                        //    printf("Datos: Inclinacion: %.2f, Freno: %d, Altura: %ld, Origen: %d\n",
+                        //           display_data.data.inclinacion,
+                        //           display_data.data.freno_on_off,
+                        //           display_data.data.altura,
+                        //           display_data.data.origen);
+//
+                        //    }
+                        
 
                     }
 

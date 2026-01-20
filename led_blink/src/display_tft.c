@@ -159,16 +159,14 @@ void display_tft_task(void *pvParameters) {
     int8_t angulo_prev=37;
     char string_angulo[5];
 
-    float peso = 55.5;
-    float peso_prev = 55.5;
     char string_peso[8]; //Espacio para poder poner "-100.00" + NULL
 
     bool barandales_arriba = true;
-    bool barandales_arriba_prev = true;
+    bool barandales_arriba_prev = false;
     char string_barandales[7];
 
     bool freno_ok = true;
-    bool freno_ok_prev = true;
+    bool freno_ok_prev = false;
     char string_freno[4];
 
     uint8_t teclado_num = 1;
@@ -233,7 +231,7 @@ void display_tft_task(void *pvParameters) {
             switch (received_data.pantalla)
             {
             case TESTS:
-                /* code */
+//--------------------------------------Pantalla TESTS--------------------------------------//
                 if (pantalla_actual != TESTS) {
                     pantalla_actual = TESTS;
                     //Dibujar campos pantalla TESTS completa//
@@ -372,7 +370,7 @@ void display_tft_task(void *pvParameters) {
                                 teclado_num = 8;
                                 break;
                             default:
-                                teclado_num = 8;
+                                teclado_num = 0;
                                 break;
                             }   
 
@@ -393,60 +391,118 @@ void display_tft_task(void *pvParameters) {
 
                 } // Fin if contiene datos
 
-                break; //Fin case TESTS
+                break; 
+//--------------------------------------Fin case pantalla TESTS--------------------------------//
 
             case INICIAL:
-                /* code */
+
+//--------------------------------------Pantalla Inicial--------------------------------------//
+
                 if (pantalla_actual != INICIAL) {
                     pantalla_actual = INICIAL;
-                //--------Pantalla Inicial--------//
-                //ESTAS VARIABLES SON DE PRUEBA, LUEGO VAN A VENIR DE LA COLA
-                    //Barra superior de indicación de freno    
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                    //Dibujar campos pantalla INICIAL completa//
+                    //--------Campos Pantalla INICIAL--------//
 
-                    //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
                     //Iconito de grados
-                    lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", AZUL_OCEANO);
                     lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
-                        lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
+                    lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
 
                     //Iconito de altura
-                    lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
-                    lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
-                        lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
-                        lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
-
+                    lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
+                    lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
 
                     //Barra inferior con opciones
                     lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
-
                         lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
                         lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
-                    
-                    lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
-                    lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
+                        lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
-
-                    vTaskDelay(pdMS_TO_TICKS(5000));  
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
-                    lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
-                    vTaskDelay(pdMS_TO_TICKS(5000));
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
-                //--------Fin Pantalla Inicial--------//
+                //--------Fin Campos Pantalla Inicial--------//
                 }
-                break;  
+                //--------Actualizar datos Pantalla INICIAL--------//
+                
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
 
-            case BALANZA:
+                    switch (received_data.data.origen)
+                    {
+                        case SENSOR_ACELEROMETRO:
+                        //Campo con ángulo
+                        angulo = (u_int8_t)round(received_data.data.inclinacion);
+                        if (angulo < 0) angulo = angulo * -1; //Valor absoluto
+                        if (angulo != angulo_prev) {
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);
+                            sprintf(string_angulo, "%d", angulo);
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                            angulo_prev = angulo;
+                        }
+                        break;
+
+                        case SENSOR_FRENO:
+                        //Barra superior de indicación de freno    
+                        freno_ok = received_data.data.freno_on_off;
+                        if (freno_ok != freno_ok_prev) {
+                            if (freno_ok) {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+                                lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                            } else {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                                lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+                            }
+                            freno_ok_prev = freno_ok;
+                        }
+
+                        case SENSOR_ALTURA:
+                        altura = (u_int8_t)round(received_data.data.altura);
+                        if (altura != altura_prev) {
+
+                            if (altura < ALTURA_SEGURA_MIN_CM) {
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", WHITE);
+                                lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", WHITE);
+                            } else {
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", RED);
+                                lcdDrawString(&dev, Cons32fx, 180, 175, (uint8_t *)"NO SEGURA", RED);
+                                //Acá faltaría la parte de cambiar la imagen del tick por una cruz roja
+                            }
+                            altura_prev = altura;        
+                        }
+
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla INICIAL.\n");
+                        break;
+
+                        //--------Fin actualizar datos Pantalla INICIAL--------//
+                    
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+                break;  
+//--------------------------------------Fin case pantalla INICIAL------------------------------//
+
+            case APAGADA:
+
+//--------------------------------------Pantalla Apagada--------------------------------------//
+
+                if (pantalla_actual != APAGADA) {
+                    pantalla_actual = APAGADA;
+                    lcdFillScreen(&dev, BLACK);
+                    //Si está disponible, apagar el backlight
+
+                }
+                break;  //Fin case pantalla 
+//--------------------------------------Fin case pantalla APAGADA----------------------------//
+   
+
+            case BALANZA_RESUMEN:
                 /* code */
-                if (pantalla_actual != BALANZA) {
-                    pantalla_actual = BALANZA;
+                if (pantalla_actual != BALANZA_RESUMEN) {
+                    pantalla_actual = BALANZA_RESUMEN;
                     //Dibujar campos pantalla BALANZA//
                     //--------Campos Pantalla Balanza--------//
                         lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
