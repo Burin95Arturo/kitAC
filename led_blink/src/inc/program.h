@@ -25,6 +25,9 @@
 // Umbral mínimo para mostrar peso (filtro de ruido)
 #define PESO_MINIMO_KG  2.0f
 
+// Ángulo máximo permitido para considerarlo horizontal
+#define ANGULO_MAXIMO_PERMITIDO 5.0f // Grados
+
 typedef enum {
     EVENT_BUTTON_1=1,
     EVENT_BUTTON_2,
@@ -127,6 +130,7 @@ typedef enum {
     STATE_BALANZA_RESUMEN,
     STATE_PESANDO,
     STATE_ERROR_CABECERA,
+    STATE_ERROR_FRENO,
     STATE_AJUSTE_CERO,    
     // ... otros estados
 } estados_central_t;

@@ -33,8 +33,12 @@ void nuevo_central(void *pvParameters) {
     static bool flag_balanza2 = false;
     static bool flag_peso_calculado = false;
 
+    static bool cabecera_en_horizontal = false;
+
     central_data_t received_data;
     estados_central_t estado_actual = STATE_BIENVENIDA;
+    estados_central_t estado_anterior = STATE_BIENVENIDA;
+
     
     static display_t display_data;
     
@@ -121,7 +125,7 @@ void nuevo_central(void *pvParameters) {
                 flag_tests = false;
 
                 display_data.contains_data = false; 
-                display_data.pantalla = INICIAL;
+                display_data.pantalla = INICIAL; //CAMBIAR PARA ALERTA_BARANDALES después del merge
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
@@ -228,6 +232,17 @@ void nuevo_central(void *pvParameters) {
                     flag_peso_calculado = true;
                 }
 
+                // === FLAG SI CABECERA ESTÁ EN HORIZONTAL === //
+                if (received_data.origen == SENSOR_ACELEROMETRO) {
+
+                    if (fabs(received_data.inclinacion) > ANGULO_MAXIMO_PERMITIDO) {
+                        // Si el ángulo es mayor al permitido, cambiar al estado de error
+                        cabecera_en_horizontal = false;
+                    } else {
+                        cabecera_en_horizontal = true;
+                    }
+                }   
+
                 // --- ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN --- //
                 // Los break son para salir del while de recepción y cambiar al siguiente estado.          
                 if (estado_actual == STATE_TESTS) {
@@ -273,11 +288,13 @@ void nuevo_central(void *pvParameters) {
                         if (display_data.data.hall_on_off == 0){
                             // Si no se detecta baranda cambio al estado Alerta Barandales
                             estado_actual = STATE_ALERTA_BARANDALES;
+                            estado_anterior = STATE_INICIAL;
                             break;
                         }
                     }
                     // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
                     if (received_data.origen == SENSOR_ACELEROMETRO  || received_data.origen == SENSOR_FRENO || received_data.origen == SENSOR_ALTURA) {
+                        display_data.data.origen = received_data.origen;
                         display_data.data.inclinacion = received_data.inclinacion;
                         display_data.data.freno_on_off = received_data.freno_on_off;
                         display_data.data.altura = received_data.altura;
@@ -299,7 +316,10 @@ void nuevo_central(void *pvParameters) {
                     // Evaluo los botones
                     if (received_data.origen == BUTTON_EVENT) {
                         // Vuelvo al estado inicial
-                        estado_actual = STATE_INICIAL;
+                        if (received_data.button_event != EVENT_NO_KEY){
+                            estado_actual = STATE_INICIAL;
+                            break;
+                        }
                     } 
                 }
 
@@ -308,6 +328,7 @@ void nuevo_central(void *pvParameters) {
                         if (received_data.button_event == EVENT_BUTTON_1){
                             // Voy para atras 
                             estado_actual = STATE_BALANZA_RESUMEN;
+                            break;
                         }
                     } 
                     
@@ -322,14 +343,15 @@ void nuevo_central(void *pvParameters) {
                     // Evaluo los botones
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
-                            // Voy al estado de pesaje o si el angulo no es 0 grados al estado de error
-                            // Tambien por seguridad se evalua el estado del freno tiene que estar activado
-                            if(received_data.inclinacion == 0 || received_data.freno_on_off == true){
+                            // Voy al PESANDO si toqué 1 la cabecera está en horizontal. Si no está en horizontal, sale error
+
+                            if (cabecera_en_horizontal){
                                 estado_actual = STATE_PESANDO;
+                                break;
                             } else {
                                 estado_actual = STATE_ERROR_CABECERA;
+                                break;
                             }
-                            break; 
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el dato en memoria
@@ -344,6 +366,14 @@ void nuevo_central(void *pvParameters) {
                             // Retorno al estado anterior
                             estado_actual = STATE_INICIAL;
                             break; 
+                        }
+                    }
+                    if (received_data.origen == SENSOR_HALL){
+                        if (display_data.data.hall_on_off == 0){
+                            // Si no se detecta baranda cambio al estado Alerta Barandales
+                            estado_actual = STATE_ALERTA_BARANDALES;
+                            estado_anterior = STATE_BALANZA_RESUMEN;
+                            break;
                         }
                     }
 
@@ -410,12 +440,10 @@ void nuevo_central(void *pvParameters) {
         // flag_test = true -> vino desde BALANZA_RESUMEN 
         if (estado_actual == STATE_ALERTA_BARANDALES) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-            
-            if (flag_tests) {
-                estado_actual = STATE_BALANZA_RESUMEN;
-            } else {                        
-                estado_actual = STATE_INICIAL; 
-            }
+
+            estado_actual = estado_anterior;
+        }
+
         }
 
         // Transicionan después de un tiempo mostrando el Error Cabecera
@@ -426,11 +454,8 @@ void nuevo_central(void *pvParameters) {
         if (estado_actual == STATE_ERROR_CABECERA) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
-            if (flag_tests) {
-                estado_actual = STATE_AJUSTE_CERO;
-            } else {                        
-                estado_actual = STATE_BALANZA_RESUMEN; 
-            }
+            estado_actual = estado_anterior;
+
         }
 
         // Transicionan después de un tiempo mostrando el Ajuste Cero
