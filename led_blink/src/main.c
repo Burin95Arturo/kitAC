@@ -16,6 +16,7 @@
 #include "inc/balanza_2.h"
 #include "inc/program.h"
 #include "inc/inclinacion.h"
+#include "inc/nvs_manager.h"
 // Definiciones de sensor_origen_t y data_t se moverán a program.h
 
 #include "inc/tasktest.h"
@@ -252,6 +253,7 @@ void user_init(void) {
     xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, &inclinacion_task_handle);
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&vNVSTask, "nvs_task", 4096, NULL, 5, NULL);
 
     xTaskCreate(&break_task, "break_task", 2048, NULL, 1, &freno_task_handle);
 
@@ -261,6 +263,9 @@ void app_main(void)
 {
     esp_log_level_set(TAG_MAIN, ESP_LOG_INFO);
     esp_log_level_set(TAG_GPIO, ESP_LOG_INFO);
+
+    // Inicializar NVS al arrancar
+    ESP_ERROR_CHECK(init_nvs_storage());
 
     ESP_LOGI(TAG_MAIN, "Iniciando app_main()...");
     user_init();

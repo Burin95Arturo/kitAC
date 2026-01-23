@@ -469,6 +469,13 @@ void nuevo_central(void *pvParameters) {
 
             estado_actual = estado_anterior;
         }
+
+        // Transicionan después de un tiempo mostrando el Error Cabecera
+        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
+        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
+        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
+        // flag_test = true -> vino desde STATE_AJUSTE_CERO 
+
         if (estado_actual == STATE_ERROR_CABECERA) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
