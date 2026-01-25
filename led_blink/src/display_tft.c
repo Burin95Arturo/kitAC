@@ -401,12 +401,20 @@ void display_tft_task(void *pvParameters) {
                     if (pantalla_anterior == APAGADA) {
                         //Si vengo de APAGADA, prender el backlight
                         //Si está disponible, prender el backlight
-                        lcdFillScreen(&dev, WHITE);
                         pantalla_anterior = INICIAL; //Actualizar pantalla anterior
 
                     }
                     //Dibujar campos pantalla INICIAL completa//
                     //--------Campos Pantalla INICIAL--------//
+                    lcdFillScreen(&dev, WHITE);
+
+                    //Reset de variables internas:
+                        //Esto es para que no se buguee 
+                        lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                        lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+                        freno_ok_prev = false;
+                        angulo_prev = 255; //Valor imposible
+                        altura_prev = 255; //Valor imposible
 
                     //Iconito de grados
                     lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
@@ -466,11 +474,16 @@ void display_tft_task(void *pvParameters) {
                         if (altura != altura_prev) {
 
                             if (altura < ALTURA_SEGURA_MIN_CM) {
-                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", WHITE);
-                                lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", WHITE);
+                                lcdDrawFillRect(&dev, 140, 271, 169, 300, WHITE);
+                                lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+                                lcdDrawFillRect(&dev, 154, 31, 180, 178, WHITE);
+                                lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
                             } else {
+                                lcdDrawBMP(&dev, "/data/cruz.bmp", 20, 140);
+                                lcdDrawFillRect(&dev, 154, 68, 180, 175, WHITE);
                                 lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", RED);
-                                lcdDrawString(&dev, Cons32fx, 180, 175, (uint8_t *)"NO SEGURA", RED);
+                                lcdDrawString(&dev, Cons32fx, 180, 178, (uint8_t *)"NO SEGURA", RED);
                                 //Acá faltaría la parte de cambiar la imagen del tick por una cruz roja
                             }
                             altura_prev = altura;        
@@ -512,7 +525,7 @@ void display_tft_task(void *pvParameters) {
                     pantalla_actual = BALANZA_RESUMEN;
                     //Dibujar campos pantalla BALANZA//
                     //--------Campos Pantalla Balanza--------//
-                        lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
+                        lcdFillScreen(&dev, WHITE);
 
                         //Barra superior con texto y botón 
                         lcdDrawFillRect(&dev, 0, 0, 44, 320, NARANJITA);
@@ -594,6 +607,8 @@ void display_tft_task(void *pvParameters) {
                 if (pantalla_actual != ERROR_BARANDALES) {
                     pantalla_actual = ERROR_BARANDALES;
                     
+                    lcdDrawFillRect(&dev, 0,0,44,319, WHITE);
+                    lcdDrawFillRect(&dev, 196,0,239,319, WHITE);
                     lcdDrawFillRect(&dev, 44,0,196,319, AMARILLITO);
                     lcdDrawBMP(&dev, "/data/warning_amarillo.bmp", 65, 55);
                     lcdDrawString(&dev, Cons32fx, 88, 210, (uint8_t *)"ATENCION", BLACK);
@@ -637,6 +652,35 @@ void display_tft_task(void *pvParameters) {
 
 
                 }
+                 //--------Actualizar datos Pantalla PESANDO--------//
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
+
+                    switch (received_data.data.origen)
+                    {
+                        case CALCULO_PESO: 
+                        //PESO ACTUAL
+                        if (flag_refresh_display_data) {
+                            lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
+                            sprintf(string_peso, "%.2f", received_data.data.peso_total);
+                            lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
+                            flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
+                        }
+                        break;
+
+                        case NOTIFY_PESAJE_COMPLETADO: 
+                        //Dibujar barra verde de pesaje completado
+                            lcdDrawFillRect(&dev, 0,0,44,319, VERDE_TEMA);
+                            lcdDrawString(&dev, ilgh24fx, 34, 262, (uint8_t *)"PESAJE COMPLETADO", WHITE);
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla PESANDO.\n");
+                        break;
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+
                 break;  //Fin case pantalla PESANDO
             //--------------------------------------Fin case pantalla PESANDO----------------------------//
 
@@ -648,7 +692,6 @@ void display_tft_task(void *pvParameters) {
         
         } //cierro xQueueReceive   
         
-         vTaskDelay(pdMS_TO_TICKS(50));
          contador_vueltas++;
             if (contador_vueltas >= 2) { //Cada x vueltas ( ? segundos o más, aprox)
                 flag_refresh_display_data = true;
@@ -663,8 +706,6 @@ void display_tft_task(void *pvParameters) {
 void simulation_task(void *pvParameters) {
 	
     display_t sent_data;
-    sent_data.data.origen = TEST_TASK;
-    sent_data.pantalla = TESTS;
 
     sent_data.data.peso_total = 55.5;
     uint16_t teclado_num = 1;
@@ -674,8 +715,7 @@ void simulation_task(void *pvParameters) {
 
 	while(1)
 	{
-       
-    
+       /* Simulación de datos para pruebas de pantalla
         for (int8_t i = 0; i<76; i++) {
 
             //INCLINACIÓN
@@ -733,15 +773,7 @@ void simulation_task(void *pvParameters) {
             if (xQueueSend(display_queue, &sent_data, (TickType_t)0) != pdPASS) {
                 printf( "No se pudo enviar datos a display.");
             } 
-            /*else {
-                    ESP_LOGI("SIMU", "Enviado: Altura: %ld, Peso: %.2f, HALL_OnOff: %d, Freno: %d, Inclinacion: %f, Boton: %d\n",
-                    sent_data.data.altura,
-                    sent_data.data.peso,
-                    sent_data.data.hall_on_off,
-                    sent_data.data.freno_on_off,
-                    sent_data.data.inclinacion,
-                    sent_data.data.button_event);
-            }*/
+
 
             vTaskDelay(pdMS_TO_TICKS(250)); //Aumentar velocidad sacando el LOGI
 
@@ -750,7 +782,142 @@ void simulation_task(void *pvParameters) {
         teclado_num = 1;
         altura = 70;
 
+        */ //CICLO FOR DE SIMULACIÓN
+        //PANTALLA INICIAL
+        sent_data.contains_data = false; 
+        sent_data.pantalla = INICIAL;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla INICIAL.\n");
+        }
+        //Manda datos
+            //Freno
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_FRENO;   
+            sent_data.data.freno_on_off = true;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Inclinación
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ACELEROMETRO;
+            sent_data.data.inclinacion = 47.0;   
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Altura
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ALTURA;
+            sent_data.data.altura = 15;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(8000));
 
+        //BARANDALES
+        sent_data.contains_data = false; 
+        sent_data.pantalla = ERROR_BARANDALES;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla APAGADA.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        //PANTALLA INICIAL
+        sent_data.contains_data = false; 
+        sent_data.pantalla = INICIAL;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla INICIAL.\n");
+        }
+        //Manda datos
+            //Freno
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_FRENO;   
+            sent_data.data.freno_on_off = true;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Inclinación
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ACELEROMETRO;
+            sent_data.data.inclinacion = 47.0;   
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Altura
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ALTURA;
+            sent_data.data.altura = 45;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(5000));
+
+        //printf("CAMBIO A BALANZA RESUMEN\n");
+        sent_data.contains_data = false; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.contains_data = true;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+
+        sent_data.contains_data = false;
+        sent_data.pantalla = ERROR_CABECERA;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla ERROR_CABECERA.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.contains_data = true;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+
+        //PESANDO
+        sent_data.contains_data = false; 
+        sent_data.pantalla = PESANDO;  
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla PESANDO.\n");
+        }
+        sent_data.contains_data = true;
+        sent_data.data.origen = CALCULO_PESO;
+        for (float peso = 45.0; peso <= 79.6; peso += 0.5) {
+            sent_data.data.peso_total = peso;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla PESANDO.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(100));
+
+        } 
+        sent_data.data.origen = NOTIFY_PESAJE_COMPLETADO;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        sent_data.contains_data = true; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.data.origen = CALCULO_PESO;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        sent_data.contains_data = true; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(100*100));
 
 	}
 

@@ -247,11 +247,11 @@ void user_init(void) {
     xTaskCreate(&button_task, "button_task", 2048, NULL, 1, &teclado_task_handle);     // Pila de 2KB
     xTaskCreate(&balanza_2_task, "balanza_2_task", 4096, NULL, 1, &balanza_2_task_handle);
             //xTaskCreate(&tasktest, "test_task", 2048, NULL, 1, NULL);     // Pila de 2K
-    xTaskCreate(&nuevo_central, "nuevo_central_task", 2048, NULL, 1, NULL); // Pila de 2K
+    //xTaskCreate(&nuevo_central, "nuevo_central_task", 2048, NULL, 1, NULL); // Pila de 2K
     //xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, 1, NULL);
     xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, &inclinacion_task_handle);
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
-    // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
+    xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
 
     xTaskCreate(&break_task, "break_task", 2048, NULL, 1, &freno_task_handle);
 

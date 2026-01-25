@@ -140,7 +140,7 @@ void nuevo_central(void *pvParameters) {
 
                 expected_responses = 1;
                 
-                display_data.contains_data = true; 
+                display_data.contains_data = false; 
                 display_data.pantalla = APAGADO;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
