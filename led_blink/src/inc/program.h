@@ -116,10 +116,11 @@ typedef enum {
     BALANZA_RESUMEN,
     TESTS,
     CONFIGURACION,
-    APAGADO, 
     ERROR_CABECERA,
     PESANDO, 
-    AJUSTE_CERO
+    AJUSTE_CERO,
+    ERROR_FRENO,
+    ALERTA_BARANDALES
 } pantallas_t;
 
 typedef struct {

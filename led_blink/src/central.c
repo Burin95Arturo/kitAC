@@ -104,12 +104,12 @@ void nuevo_central(void *pvParameters) {
                 - Teclado
                 */
                 xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                //xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
-                //xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
-                //xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 2;
+                expected_responses = 5;
 
                 display_data.contains_data = false; 
                 display_data.pantalla = INICIAL;
@@ -123,10 +123,9 @@ void nuevo_central(void *pvParameters) {
                 */
 
                 expected_responses = 0;
-                flag_tests = false;
 
                 display_data.contains_data = false; 
-                display_data.pantalla = INICIAL; //CAMBIAR PARA ALERTA_BARANDALES después del merge
+                display_data.pantalla = ALERTA_BARANDALES; //CAMBIAR PARA ALERTA_BARANDALES después del merge
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
@@ -140,8 +139,8 @@ void nuevo_central(void *pvParameters) {
 
                 expected_responses = 1;
                 
-                display_data.contains_data = true; 
-                display_data.pantalla = APAGADO;
+                display_data.contains_data = false; 
+                display_data.pantalla = APAGADA;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
@@ -162,25 +161,75 @@ void nuevo_central(void *pvParameters) {
             case STATE_BALANZA_RESUMEN:
                 /* Se piden datos a todos los sensores:     
                 - Inclinación
-                - Balanza 1
-                - Balanza 2
                 - Barandales 
                 - Freno
                 - Altura
                 - Teclado
                 */
                 // Enviamos el current_request_id como valor de notificación
-                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(barandales_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 5;
-                flag_tests = true; // Para que vuelva a este estado desde Alerta Baranda
-
-                display_data.contains_data = true; 
+                expected_responses = 4;
+                
+                display_data.contains_data = false; 
                 display_data.pantalla = BALANZA_RESUMEN;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_PESANDO:
+                /* Se piden datos a todos los sensores:     
+                - Balanza 1
+                - Balanza 2
+                - Teclado
+                */
+                // Enviamos el current_request_id como valor de notificación
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 3;
+                
+                display_data.contains_data = false; 
+                display_data.pantalla = PESANDO;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_ERROR_FRENO:
+                /* No se piden datos
+                */
+                expected_responses = 0;
+                
+                display_data.contains_data = false; 
+                display_data.pantalla = ERROR_FRENO;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
+            break;
+
+            case STATE_AJUSTE_CERO:
+                /* Se piden datos a todos los sensores:     
+                - Balanza 1
+                - Balanza 2
+                - Teclado
+                - Inclinación
+                */
+                // Enviamos el current_request_id como valor de notificación
+                xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 4;
+                
+                display_data.contains_data = false; 
+                display_data.pantalla = AJUSTE_CERO;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla INICIAL.\n");
                 }
@@ -322,11 +371,15 @@ void nuevo_central(void *pvParameters) {
 
                     }
 
+                    // ver de con tecla 3, ir a la pantalla de test
+
                 } //FIN ESTADO INICIAL
+            
 
                 /************************************** Estado ERROR_CABECERA ***************************************/
                 if (estado_actual == STATE_ERROR_CABECERA) {
                     // No se hace nada 
+                    // tiene que sonar un buzzer y prender un led rojo (pendiente)
                 }
 
                  /************************************** Estado APAGADO ********************************************/
@@ -354,9 +407,11 @@ void nuevo_central(void *pvParameters) {
                     } 
                     
                     if (received_data.inclinacion != 0) {
-                        estado_actual = STATE_ERROR_CABECERA;
+                        estado_actual = STATE_ERROR_CABECERA; // cabecera no en horizontal
+                        break;
                     } else {
                         // Rutina de conseguir el cero
+                        // tomar los valores de cuentas_raw de ambas balanzas y guardarlos como TARA en memoria
                     }
                 }
 
@@ -366,7 +421,7 @@ void nuevo_central(void *pvParameters) {
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
                             // Voy al PESANDO si toqué 1 la cabecera está en horizontal. Si no está en horizontal, sale error
-
+                            // tengo que verificar tambien el freno
                             if (cabecera_en_horizontal){
                                 estado_actual = STATE_PESANDO;
                                 break;
@@ -374,6 +429,10 @@ void nuevo_central(void *pvParameters) {
                                 estado_actual = STATE_ERROR_CABECERA;
                                 break;
                             }
+
+                            // tengo que verificar tambien el freno
+
+                            // hay que verificar la altura permitida
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el dato en memoria
@@ -412,6 +471,8 @@ void nuevo_central(void *pvParameters) {
                 /************************************** Estado PESANDO ***************************************/
                 if (estado_actual == STATE_PESANDO) {
                     // Evaluo el teclado para cambiar de estado
+
+                    // no se analizan botones, se hace la tranicion automaticamente despues de tomar el peso; puede ser por timeout, o muestras promediadas, o etc
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el valor del peso
@@ -490,6 +551,9 @@ void nuevo_central(void *pvParameters) {
             // Evaluar que hacer en caso de error
             
         }
+
+
+        // flata agregar el estado de error de freno
 
         // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
