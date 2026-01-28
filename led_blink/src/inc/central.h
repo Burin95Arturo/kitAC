@@ -10,6 +10,6 @@
 #include "freertos/queue.h"
 #include "math.h"
 
-#define MUESTRAS_PROMEDIO 100
+#define MUESTRAS_PROMEDIO 1000
 
 void nuevo_central(void *pvParameters);

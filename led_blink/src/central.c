@@ -32,8 +32,9 @@ void nuevo_central(void *pvParameters) {
     static bool flag_balanza1 = false;
     static bool flag_balanza2 = false;
     static bool flag_peso_calculado = false;
-
     static bool cabecera_en_horizontal = false;
+    static bool freno_activado = false;
+    static bool barandales_arriba = false;
 
     central_data_t received_data;
     estados_central_t estado_actual = STATE_BIENVENIDA;
@@ -47,6 +48,8 @@ void nuevo_central(void *pvParameters) {
 
     static long cuentas_raw_b1 = 0;
     static long cuentas_raw_b2 = 0;
+
+    static uint16_t contador_estado_pesando = 0;
 
     while (1) {
 
@@ -163,7 +166,6 @@ void nuevo_central(void *pvParameters) {
                 - Inclinación
                 - Barandales 
                 - Freno
-                - Altura
                 - Teclado
                 */
                 // Enviamos el current_request_id como valor de notificación
@@ -185,14 +187,12 @@ void nuevo_central(void *pvParameters) {
                 /* Se piden datos a todos los sensores:     
                 - Balanza 1
                 - Balanza 2
-                - Teclado
                 */
                 // Enviamos el current_request_id como valor de notificación
                 xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 3;
+                expected_responses = 2;
                 
                 display_data.contains_data = false; 
                 display_data.pantalla = PESANDO;
@@ -221,12 +221,14 @@ void nuevo_central(void *pvParameters) {
                 - Inclinación
                 */
                 // Enviamos el current_request_id como valor de notificación
+
+                // SEGUN "NUEVO ESQUEMA DE ESTADOS", BALANZA RESUMEN ES LA QUE CHEQUEA QUE ESTE TODO OK. AJUSTE CERO MIDE DIRECTO
+                // xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 4;
+                expected_responses = 3;
                 
                 display_data.contains_data = false; 
                 display_data.pantalla = AJUSTE_CERO;
@@ -294,6 +296,28 @@ void nuevo_central(void *pvParameters) {
                 }
                 // ====================== Fin FLAG CABECERA EN HORIZONTAL =================================== //
    
+                // ====================== FLAG FRENO PUESTO ======================================= //
+                if (received_data.origen == SENSOR_FRENO) {
+
+                    if (received_data.freno_on_off) {
+                        freno_activado = true;
+                    } else {
+                        freno_activado = false;
+                    }
+                }
+                // ====================== Fin FLAG FRENO PUESTO =================================== //
+
+                // ====================== FLAG BARANDALES ARRIBA ======================================= //
+                if (received_data.origen == SENSOR_HALL) {
+
+                    if (received_data.hall_on_off) {
+                        barandales_arriba = true;
+                    } else {
+                        barandales_arriba = false;
+                    }
+                }
+                // ====================== Fin FLAG BARANDALES ARRIBA =================================== //
+
                 // --------------------- BLOQUE 2.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN ---------------------------------- //
 
                 // Según el estado actual, se envían datos a la pantalla o se hacen transiciones.
@@ -336,12 +360,13 @@ void nuevo_central(void *pvParameters) {
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             estado_actual = STATE_APAGADO;
                             break;
-                        }
+
+                        } 
                     }
                     // Evaluo barandales para cambiar de estado
                     if (received_data.origen == SENSOR_HALL){
                         if (display_data.data.hall_on_off == 0){
-                            // Si no se detecta baranda cambio al estado Alerta Barandales
+                            // Si no se detecta baranda, cambio al estado Alerta Barandales
                             estado_actual = STATE_ALERTA_BARANDALES;
                             estado_anterior = STATE_INICIAL;
                             break;
@@ -371,16 +396,8 @@ void nuevo_central(void *pvParameters) {
 
                     }
 
-                    // ver de con tecla 3, ir a la pantalla de test
-
                 } //FIN ESTADO INICIAL
             
-
-                /************************************** Estado ERROR_CABECERA ***************************************/
-                if (estado_actual == STATE_ERROR_CABECERA) {
-                    // No se hace nada 
-                    // tiene que sonar un buzzer y prender un led rojo (pendiente)
-                }
 
                  /************************************** Estado APAGADO ********************************************/
                 if (estado_actual == STATE_APAGADO) {
@@ -406,10 +423,7 @@ void nuevo_central(void *pvParameters) {
                         }
                     } 
                     
-                    if (received_data.inclinacion != 0) {
-                        estado_actual = STATE_ERROR_CABECERA; // cabecera no en horizontal
-                        break;
-                    } else {
+                    else {
                         // Rutina de conseguir el cero
                         // tomar los valores de cuentas_raw de ambas balanzas y guardarlos como TARA en memoria
                     }
@@ -421,27 +435,40 @@ void nuevo_central(void *pvParameters) {
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
                             // Voy al PESANDO si toqué 1 la cabecera está en horizontal. Si no está en horizontal, sale error
-                            // tengo que verificar tambien el freno
-                            if (cabecera_en_horizontal){
+
+                            if (cabecera_en_horizontal && freno_activado && barandales_arriba){
                                 estado_actual = STATE_PESANDO;
                                 break;
-                            } else {
+                            } else if (!cabecera_en_horizontal){ 
                                 estado_actual = STATE_ERROR_CABECERA;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
                                 break;
                             }
-
-                            // tengo que verificar tambien el freno
-
-                            // hay que verificar la altura permitida
+                            else if (!freno_activado){
+                                estado_actual = STATE_ERROR_FRENO;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
+                                break;
+                            }
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el dato en memoria
                             break; 
                         }
                         else if (received_data.button_event == EVENT_BUTTON_3){
-                            // Voy a ajustar el cero
-                            estado_actual = STATE_AJUSTE_CERO;
-                            break; 
+                            if (cabecera_en_horizontal && freno_activado && barandales_arriba){
+                                // Voy a ajustar el cero
+                                estado_actual = STATE_AJUSTE_CERO;
+                                break; 
+                            } else if (!cabecera_en_horizontal){ 
+                                estado_actual = STATE_ERROR_CABECERA;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
+                                break;
+                            }
+                            else if (!freno_activado){
+                                estado_actual = STATE_ERROR_FRENO;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
+                                break;
+                            }
                         }
                         else if (received_data.button_event == EVENT_BUTTON_4){
                             // Retorno al estado anterior
@@ -449,13 +476,11 @@ void nuevo_central(void *pvParameters) {
                             break; 
                         }
                     }
-                    if (received_data.origen == SENSOR_HALL){
-                        if (display_data.data.hall_on_off == 0){
-                            // Si no se detecta baranda cambio al estado Alerta Barandales
-                            estado_actual = STATE_ALERTA_BARANDALES;
-                            estado_anterior = STATE_BALANZA_RESUMEN;
-                            break;
-                        }
+                    if (barandales_arriba){
+                        // Si no se detecta baranda cambio al estado Alerta Barandales
+                        estado_actual = STATE_ALERTA_BARANDALES;
+                        estado_anterior = STATE_BALANZA_RESUMEN;
+                        break;
                     }
 
                     if (received_data.origen == SENSOR_FRENO) {
@@ -470,39 +495,42 @@ void nuevo_central(void *pvParameters) {
 
                 /************************************** Estado PESANDO ***************************************/
                 if (estado_actual == STATE_PESANDO) {
-                    // Evaluo el teclado para cambiar de estado
 
-                    // no se analizan botones, se hace la tranicion automaticamente despues de tomar el peso; puede ser por timeout, o muestras promediadas, o etc
-                    if (received_data.origen == BUTTON_EVENT) {
-                        if (received_data.button_event == EVENT_BUTTON_2){
-                            // Guardo el valor del peso
-                            break;
-
-                        } else if (received_data.button_event == EVENT_BUTTON_3){
-                            // Cero? Evaluar diagrama
-                            break;
-
-                        } else if (received_data.button_event == EVENT_BUTTON_4){
-                            // Vuelvo atras
-                            estado_actual = STATE_BALANZA_RESUMEN;
-                            break;
-
-                        }
+                    if (flag_peso_calculado) {
+                        flag_peso_calculado = false;
+                        contador_estado_pesando++;
                     }
-
-                    if (received_data.origen == CALCULO_PESO) {
+                    
+                    // if (received_data.origen == CALCULO_PESO) {
+                    //     // Envio el valor del peso a display.
+                    //     display_data.data.peso_total = received_data.peso_total;
+                    //     display_data.contains_data = true;
+                    //     display_data.pantalla = PESANDO;
+                    //     display_data.data.origen = CALCULO_PESO;
+                    //     if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                    //         printf("Error enviando datos en pantalla PESANDO.\n");
+                    //     }
+                    // }
+                    
+                    if (contador_estado_pesando >= MUESTRAS_PROMEDIO) {
+                        // Después de obtener suficientes muestras, vuelvo a BALANZA_RESUMEN
                         // Envio el valor del peso a display.
+
                         display_data.data.peso_total = received_data.peso_total;
                         display_data.contains_data = true;
                         display_data.pantalla = PESANDO;
                         display_data.data.origen = CALCULO_PESO;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla PESANDO.\n");
+                            printf("Error enviando datos en pantalla PESANDO.\n");
                         }
+
+                        contador_estado_pesando = 0;
+                        estado_actual = STATE_BALANZA_RESUMEN;
+                        break;
                     }
+
                 } // Fin ESTADO PESANDO
-
-
+                
             } else {
                 // Si no se leyó datos en la cola y se cumplió el timeout esperando sensores
                 break; 
@@ -525,6 +553,7 @@ void nuevo_central(void *pvParameters) {
                 estado_actual = STATE_INICIAL; 
             }
         }
+        
         if (estado_actual == STATE_ALERTA_BARANDALES) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
@@ -542,18 +571,18 @@ void nuevo_central(void *pvParameters) {
             
             estado_actual = estado_anterior;
 
+            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
+
         }
 
-        // FALTA DESARROLLAR AJUSTE_CERO Y SU TRANSICIÓN
-        if (estado_actual == STATE_AJUSTE_CERO) {
+        if (estado_actual == STATE_ERROR_FRENO) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-             
-            // Evaluar que hacer en caso de error
             
+            estado_actual = estado_anterior;
+
+            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
+
         }
-
-
-        // flata agregar el estado de error de freno
 
         // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
