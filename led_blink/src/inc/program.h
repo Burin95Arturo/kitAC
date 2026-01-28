@@ -6,6 +6,8 @@
 #include "freertos/queue.h"
 
 #include "freertos/semphr.h"
+#include "inc/nvs_manager.h"
+
 
 // Número de lecturas por solicitud (ajustable)
 #ifndef HX711_READ_ITERATIONS
@@ -144,6 +146,8 @@ typedef enum {
     // ... otros estados
 } estados_central_t;
 
+extern int32_t tara_b1; 
+extern int32_t tara_b2;
 
 // static const char *TAG;
 

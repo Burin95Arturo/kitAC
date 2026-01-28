@@ -1,11 +1,12 @@
 #include "inc/central.h"
 
-
 float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
     
     // 1. Calcular cuentas netas (Restar la TARA)
-    long neto_b1 = cuentas_raw_b1 - TARA_BALANZA_1;
-    long neto_b2 = cuentas_raw_b2 - TARA_BALANZA_2;
+    // long neto_b1 = cuentas_raw_b1 - TARA_BALANZA_1;
+    // long neto_b2 = cuentas_raw_b2 - TARA_BALANZA_2;
+    long neto_b1 = cuentas_raw_b1 - tara_b1;
+    long neto_b2 = cuentas_raw_b2 - tara_b2;
 
     // 2. Calcular el peso parcial aportado por cada sector
     // Se usan coeficientes independientes porque la eficiencia mecánica es distinta
@@ -24,6 +25,16 @@ float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
     return peso_total;
 }
 
+void tara_balanzas(long raw_b1, long raw_b2) {
+    tara_b1 = (int32_t)raw_b1;
+    tara_b2 = (int32_t)raw_b2;
+
+    // Persistimos los valores para que no se pierdan al reiniciar
+    write_nvs_int("tara_b1", tara_b1);
+    write_nvs_int("tara_b2", tara_b2);
+    
+    printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
+}
 
 
 void nuevo_central(void *pvParameters) {
@@ -432,7 +443,10 @@ void nuevo_central(void *pvParameters) {
                     
                     else {
                         // Rutina de conseguir el cero
-                        // tomar los valores de cuentas_raw de ambas balanzas y guardarlos como TARA en memoria
+                        // Si el flag es true entonces los valores estan actualizados y se tara
+                        if (flag_peso_calculado){
+                            tara_balanzas(received_data.peso_raw1, received_data.peso_raw2);
+                        }
                     }
                 }
 

@@ -5,7 +5,6 @@ volatile long hx711_raw_reading = 0;
 volatile long hx711_weight_kg_public;
 
 
-
 // --- Variables globales para la lectura (volatile para asegurar que el compilador no optimice lecturas) ---
 volatile float hx711_weight_kg = 0.0f; // Nueva variable para almacenar el peso en kg
 
@@ -101,6 +100,10 @@ static long hx711_read_raw(void) {
 void balanza_task(void *pvParameters){
     // Inicializar los pines del HX711
     hx711_init();
+
+    // Intentamos leer de la NVS, si falla (porque es la primera vez), quedan en 0
+    if (read_nvs_int("tara_b1", &tara_b1) != ESP_OK) tara_b1 = 0;
+
     long acu_raw_value = 0;
     central_data_t peso_data;
     uint32_t received_request_id; 

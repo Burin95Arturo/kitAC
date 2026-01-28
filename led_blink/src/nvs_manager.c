@@ -4,6 +4,8 @@
 #include "esp_log.h"
 
 static const char *TAG = "NVS_SYSTEM";
+int32_t tara_b1; 
+int32_t tara_b2;
 
 void vNVSTask(void *pvParameters) {
     int32_t contador = 0;
