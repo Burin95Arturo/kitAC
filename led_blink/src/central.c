@@ -61,9 +61,16 @@ void nuevo_central(void *pvParameters) {
 
         switch (estado_actual) {
             case STATE_BIENVENIDA:
-                // Lo único que se hacemos al entrar es esperar un tiempo y luego cambiar a INICIAL.
-                // o a TESTS si el flag está activo.
-                expected_responses = 0;
+                // New twist: Vamos a hacer que, si se toca algún botón en esta pantalla, se entra al modo test
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                expected_responses = 1;
+
+                display_data.contains_data = false; 
+                display_data.pantalla = BIENVENIDA;
+                if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
+                    printf("Error enviando pantalla INICIAL.\n");
+                }
 
                 break;
 
@@ -531,6 +538,20 @@ void nuevo_central(void *pvParameters) {
 
                 } // Fin ESTADO PESANDO
                 
+                if (estado_actual == STATE_BIENVENIDA) {
+                    vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+                    
+                    // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
+                    // Si hay algún botón en cola, significa que se quiere entrar a TESTS
+                    if (received_data.origen == BUTTON_EVENT) {
+                        estado_actual = STATE_TESTS;
+                        break;
+                    } else {
+                        estado_actual = STATE_INICIAL;
+                        break;
+                    } 
+                } // Fin ESTADO BIENVENIDA
+                
             } else {
                 // Si no se leyó datos en la cola y se cumplió el timeout esperando sensores
                 break; 
@@ -543,17 +564,6 @@ void nuevo_central(void *pvParameters) {
         // --------------------- BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
         // Transicionan solos después de un tiempo 
-        if (estado_actual == STATE_BIENVENIDA) {
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-            
-            if (flag_tests) {
-                estado_actual = STATE_TESTS;
-                flag_tests = false;
-            } else {                        
-                estado_actual = STATE_INICIAL; 
-            }
-        }
-        
         if (estado_actual == STATE_ALERTA_BARANDALES) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
