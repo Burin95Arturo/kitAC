@@ -75,6 +75,8 @@ typedef enum {
     CALCULO_PESO,
     SENSOR_ACELEROMETRO,
     TEST_TASK,
+    PESO_MEMORIA,
+    NOTIFY_PESAJE_COMPLETADO,
     BUTTON_EVENT
 } sensor_origen_t;
 typedef enum {
@@ -119,6 +121,8 @@ typedef enum {
     TESTS,
     CONFIGURACION,
     ERROR_CABECERA,
+    ERROR_BARANDALES,
+    ERROR_FRENO,
     PESANDO, 
     AJUSTE_CERO,
     ERROR_FRENO,

@@ -27,5 +27,7 @@ void simulation_task(void *pvParameters);
 #define VERDE_OSCURO     rgb565(0,   50,   15) // #00ca3a
 #define VERDE_TEMA       rgb565(139, 250, 175) // #8BFAAF
 #define CELESTITO       rgb565(189, 215, 238) // #8BFAAF
-#define NARANJITA       0xfd2c // #ffa765
-#define GRIS            0x5aeb
+#define NARANJITA       0xfbe2 // #ffa765
+#define GRIS            0x2124//0x39e7
+#define AMARILLITO      0xFFD2 // #F6F49C
+
