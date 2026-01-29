@@ -125,7 +125,6 @@ typedef enum {
     ERROR_FRENO,
     PESANDO, 
     AJUSTE_CERO,
-    ERROR_FRENO,
     ALERTA_BARANDALES
 } pantallas_t;
 
