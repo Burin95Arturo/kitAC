@@ -121,6 +121,7 @@ typedef enum {
     APAGADO, 
     ERROR_CABECERA,
     ERROR_BARANDALES,
+    ERROR_FRENO,
     PESANDO, 
     AJUSTE_CERO
 } pantallas_t;

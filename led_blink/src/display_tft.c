@@ -636,6 +636,22 @@ void display_tft_task(void *pvParameters) {
                 break;  //Fin case pantalla ERROR_CABECERA
             //--------------------------------------Fin case pantalla ERROR_CABECERA----------------------------//
 
+            case ERROR_FRENO:
+
+            //--------------------------------------Pantalla ERROR_FRENO--------------------------------------//
+
+                if (pantalla_actual != ERROR_FRENO) {
+                    pantalla_actual = ERROR_FRENO;
+                    
+                    lcdDrawFillRect(&dev, 44,0,196,319, RED);
+                    lcdDrawBMP(&dev, "/data/warning_rojo.bmp", 95, 55);
+                    lcdDrawString(&dev, Cons32fx, 88, 180, (uint8_t *)"ERROR", WHITE);
+                    lcdDrawString(&dev, ilgh24fx, 150, 268, (uint8_t *)"FRENO NO ACTIVADO", WHITE);
+
+                }
+                break;  //Fin case pantalla ERROR_FRENO
+            //--------------------------------------Fin case pantalla ERROR_FRENO----------------------------//
+
             case PESANDO:
 
             //--------------------------------------Pantalla PESANDO--------------------------------------//
