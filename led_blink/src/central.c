@@ -336,6 +336,12 @@ void nuevo_central(void *pvParameters) {
                 }
                 // ====================== Fin FLAG BARANDALES ARRIBA =================================== //
 
+                // ====================== APAGADO DE LED DE ALERTA ======================================= //
+                if (freno_activado && barandales_arriba) {
+                    gpio_set_level(LED_PIN, 0); // Apago LED de alerta
+                }
+                // ====================== Fin APAGADO DE LED DE ALERTA =================================== //
+
                 // --------------------- BLOQUE 2.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN ---------------------------------- //
 
                 // Según el estado actual, se envían datos a la pantalla o se hacen transiciones.
@@ -442,8 +448,7 @@ void nuevo_central(void *pvParameters) {
                     } 
                     
                     else {
-                        // Rutina de conseguir el cero
-                        // Si el flag es true entonces los valores estan actualizados y se tara
+                        // Hay que ver si se envia algo al display o no
                         if (flag_peso_calculado){
                             tara_balanzas(received_data.peso_raw1, received_data.peso_raw2);
                         }
@@ -557,7 +562,7 @@ void nuevo_central(void *pvParameters) {
                     
                     // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
                     // Si hay algún botón en cola, significa que se quiere entrar a TESTS
-                    if (received_data.origen == BUTTON_EVENT) {
+                    if (received_data.origen == BUTTON_EVENT && received_data.button_event != EVENT_NO_KEY) {
                         estado_actual = STATE_TESTS;
                         break;
                     } else {
@@ -582,6 +587,8 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
             estado_actual = estado_anterior;
+
+            xSemaphoreGive(buzzer_semaphore);
         }
 
         // Transicionan después de un tiempo mostrando el Error Cabecera
@@ -595,7 +602,8 @@ void nuevo_central(void *pvParameters) {
             
             estado_actual = estado_anterior;
 
-            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
+//            xSemaphoreGive(buzzer_semaphore);
+            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER --> a chequear
 
         }
 
@@ -603,6 +611,8 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
             estado_actual = estado_anterior;
+
+            xSemaphoreGive(buzzer_semaphore);
 
             // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
 
