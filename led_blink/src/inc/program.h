@@ -121,7 +121,6 @@ typedef enum {
     TESTS,
     CONFIGURACION,
     ERROR_CABECERA,
-    ERROR_BARANDALES,
     ERROR_FRENO,
     PESANDO, 
     AJUSTE_CERO,

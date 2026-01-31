@@ -62,25 +62,29 @@ void nuevo_central(void *pvParameters) {
 
     static uint16_t contador_estado_pesando = 0;
 
+    vTaskDelay(pdMS_TO_TICKS(3000)); //Esperar a que se estabilice todo
+
     while (1) {
 
         // --------------------- BLOQUE 1: LÓGICA DE ENTRADA Y REPETICIÓN DEL ESTADO --------------------- //
         
         // Incrementamos el ID cada vez que pedimos nuevos datos.
         // Esto invalida automáticamente cualquier dato viejo en la cola.
+        printf("----- Nuevo ciclo de central -----\n");
         current_request_id++; 
+        printf("current_request_id: %ld\n", current_request_id);
 
         switch (estado_actual) {
             case STATE_BIENVENIDA:
                 // New twist: Vamos a hacer que, si se toca algún botón en esta pantalla, se entra al modo test
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                //xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 1;
+                expected_responses = 0;
 
                 display_data.contains_data = false; 
                 display_data.pantalla = BIENVENIDA;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla BIENVENIDA.\n");
                 }
 
                 break;
@@ -103,6 +107,8 @@ void nuevo_central(void *pvParameters) {
                 xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                printf("Enviado notify con request_id: %ld\n", current_request_id);
 
                 expected_responses = 7;
 
@@ -129,6 +135,8 @@ void nuevo_central(void *pvParameters) {
                 xTaskNotify(freno_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+
+                printf("Enviado notify con request_id: %ld\n", current_request_id);
 
                 expected_responses = 5;
 
@@ -261,12 +269,67 @@ void nuevo_central(void *pvParameters) {
 
         // --------------------- FIN BLOQUE 1: LÓGICA DE ENTRADA Y REPETICIÓN DEL ESTADO --------------------- //
 
+        // --------------------- BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
+
+        // Transicionan solos después de un tiempo 
+        if (estado_actual == STATE_ALERTA_BARANDALES) {
+            barandales_arriba = false; // Reiniciar la flag para la próxima vez
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+
+            estado_actual = estado_anterior;
+
+            //xSemaphoreGive(buzzer_semaphore);
+        }
+
+        // Transicionan después de un tiempo mostrando el Error Cabecera
+        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
+        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
+        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
+        // flag_test = true -> vino desde STATE_AJUSTE_CERO 
+
+        if (estado_actual == STATE_ERROR_CABECERA) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            
+            estado_actual = estado_anterior;
+
+//            xSemaphoreGive(buzzer_semaphore);
+            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER --> a chequear
+
+        }
+
+        if (estado_actual == STATE_ERROR_FRENO) {
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            
+            estado_actual = estado_anterior;
+
+            xSemaphoreGive(buzzer_semaphore);
+
+            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
+
+        }
+
+        if (estado_actual == STATE_BIENVENIDA) {
+            
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+            // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
+            // Si hay algún botón en cola, significa que se quiere entrar a TESTS
+            if (flag_tests) {
+                estado_actual = STATE_TESTS;
+            } else {
+                estado_actual = STATE_INICIAL;
+            }
+        } // Fin ESTADO BIENVENIDA
+
+        // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
+
+
+
         // --------------------- BLOQUE 2: LÓGICA DE ESPERA Y PROCESAMIENTO ---------------------------------- //
         
         // Esperamos datos en cola.
         // Implementamos un timeout para no bloquearnos por siempre.
         uint8_t received_count = 0;
-
+        printf("Antes del while %ld\n", current_request_id);
         while (received_count < expected_responses) {
             if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(1000)) == pdTRUE) {
                 
@@ -278,6 +341,8 @@ void nuevo_central(void *pvParameters) {
                     continue; // Ignoramos este mensaje y volvemos a leer la cola
                     // (este continue ignora lo que viene abajo y avanza con el while)
                 }
+                printf("Dato válido del sensor %d (req_id recibido %ld)\n", 
+                       received_data.origen, received_data.request_id);
                 // Si llegamos aquí, el dato es FRESCO y válido para este estado
                 received_count++;
 
@@ -389,7 +454,7 @@ void nuevo_central(void *pvParameters) {
                     }
                     // Evaluo barandales para cambiar de estado
                     if (received_data.origen == SENSOR_HALL){
-                        if (display_data.data.hall_on_off == 0){
+                        if (received_data.hall_on_off == 0){
                             // Si no se detecta baranda, cambio al estado Alerta Barandales
                             estado_actual = STATE_ALERTA_BARANDALES;
                             estado_anterior = STATE_INICIAL;
@@ -557,7 +622,7 @@ void nuevo_central(void *pvParameters) {
 
                 } // Fin ESTADO PESANDO
                 
-                if (estado_actual == STATE_BIENVENIDA) {
+                /*if (estado_actual == STATE_BIENVENIDA) {
                     vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
                     
                     // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
@@ -569,7 +634,7 @@ void nuevo_central(void *pvParameters) {
                         estado_actual = STATE_INICIAL;
                         break;
                     } 
-                } // Fin ESTADO BIENVENIDA
+                } */// Fin ESTADO BIENVENIDA
                 
             } else {
                 // Si no se leyó datos en la cola y se cumplió el timeout esperando sensores
@@ -580,49 +645,11 @@ void nuevo_central(void *pvParameters) {
         } // Fin del while de recepción
         
 
-        // --------------------- BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
-        // Transicionan solos después de un tiempo 
-        if (estado_actual == STATE_ALERTA_BARANDALES) {
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-
-            estado_actual = estado_anterior;
-
-            xSemaphoreGive(buzzer_semaphore);
-        }
-
-        // Transicionan después de un tiempo mostrando el Error Cabecera
-        // flag_test = false funcionamiento normal fuera del modo test STATE_TEST
-        // Uso dicho flag para saber de donde vino y a donde retorno desde Error Cabecera
-        // flag_test = false -> vino desde STATE_BALANZA_RESUMEN
-        // flag_test = true -> vino desde STATE_AJUSTE_CERO 
-
-        if (estado_actual == STATE_ERROR_CABECERA) {
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-            
-            estado_actual = estado_anterior;
-
-//            xSemaphoreGive(buzzer_semaphore);
-            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER --> a chequear
-
-        }
-
-        if (estado_actual == STATE_ERROR_FRENO) {
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-            
-            estado_actual = estado_anterior;
-
-            xSemaphoreGive(buzzer_semaphore);
-
-            // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
-
-        }
-
-        // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
 
         /*********** Demora general para el bucle completo ********************/
-        vTaskDelay(pdMS_TO_TICKS(100)); 
+        vTaskDelay(pdMS_TO_TICKS(500)); 
 
     } // Fin del while(1)
 

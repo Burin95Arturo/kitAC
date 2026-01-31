@@ -204,15 +204,6 @@ void display_tft_task(void *pvParameters) {
     init_spiffs("/data");
     //---------------------------------------//
     
-    //--------Pantalla de Bienvenida--------//
-
-    lcdDrawBMP(&dev, "/data/kitac_logo.bmp", 99, 30);
-    lcdDrawBMP(&dev, "/data/utn_logo.bmp", 228, 207);
-    vTaskDelay(pdMS_TO_TICKS(3000));  
-
-    lcdFillScreen(&dev, WHITE);
-    /******************************************/ 
-
     while (1) {
 
         // Leer de la cola central_queue
@@ -231,6 +222,18 @@ void display_tft_task(void *pvParameters) {
         
             switch (received_data.pantalla)
             {
+            case BIENVENIDA:
+                //--------------------------------------Pantalla BIENVENIDA--------------------------------------//
+                if (pantalla_actual != BIENVENIDA) {
+                    pantalla_actual = BIENVENIDA;
+                    //Dibujar campos pantalla BIENVENIDA completa//
+                    lcdDrawBMP(&dev, "/data/kitac_logo.bmp", 99, 30);
+                    lcdDrawBMP(&dev, "/data/utn_logo.bmp", 228, 207);
+                }
+                /******************************************/ 
+                break;
+
+
             case TESTS:
             //--------------------------------------Pantalla TESTS--------------------------------------//
                 if (pantalla_actual != TESTS) {
@@ -600,12 +603,12 @@ void display_tft_task(void *pvParameters) {
 
             //--------------------------------------Fin case pantalla BALANZA_RESUMEN---------------------//
 
-            case ERROR_BARANDALES:
+            case ALERTA_BARANDALES:
 
             //--------------------------------------Pantalla ERROR_BARANDALES--------------------------------------//
 
-                if (pantalla_actual != ERROR_BARANDALES) {
-                    pantalla_actual = ERROR_BARANDALES;
+                if (pantalla_actual != ALERTA_BARANDALES) {
+                    pantalla_actual = ALERTA_BARANDALES;
                     
                     lcdDrawFillRect(&dev, 0,0,44,319, WHITE);
                     lcdDrawFillRect(&dev, 196,0,239,319, WHITE);
@@ -831,7 +834,7 @@ void simulation_task(void *pvParameters) {
 
         //BARANDALES
         sent_data.contains_data = false; 
-        sent_data.pantalla = ERROR_BARANDALES;
+        sent_data.pantalla = ALERTA_BARANDALES;
         if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
             printf("Error enviando pantalla APAGADA.\n");
         }
