@@ -393,10 +393,10 @@ void nuevo_central(void *pvParameters) {
                 // ====================== FLAG BARANDALES ARRIBA ======================================= //
                 if (received_data.origen == SENSOR_HALL) {
 
-                    if (received_data.hall_on_off) {
-                        barandales_arriba = true;
-                    } else {
+                    if (received_data.hall_on_off == 0) {
                         barandales_arriba = false;
+                    } else {
+                        barandales_arriba = true;
                     }
                 }
                 // ====================== Fin FLAG BARANDALES ARRIBA =================================== //
@@ -540,6 +540,11 @@ void nuevo_central(void *pvParameters) {
                                 estado_anterior = STATE_BALANZA_RESUMEN;
                                 break;
                             }
+                            else if (!barandales_arriba){
+                                estado_actual = STATE_ALERTA_BARANDALES;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
+                                break;
+                            }
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el dato en memoria
@@ -560,6 +565,11 @@ void nuevo_central(void *pvParameters) {
                                 estado_anterior = STATE_BALANZA_RESUMEN;
                                 break;
                             }
+                            else if (!barandales_arriba){
+                                estado_actual = STATE_ALERTA_BARANDALES;
+                                estado_anterior = STATE_BALANZA_RESUMEN;
+                                break;
+                            }
                         }
                         else if (received_data.button_event == EVENT_BUTTON_4){
                             // Retorno al estado anterior
@@ -567,15 +577,19 @@ void nuevo_central(void *pvParameters) {
                             break; 
                         }
                     }
-                    if (barandales_arriba){
-                        // Si no se detecta baranda cambio al estado Alerta Barandales
-                        estado_actual = STATE_ALERTA_BARANDALES;
-                        estado_anterior = STATE_BALANZA_RESUMEN;
-                        break;
-                    }
 
+                    // NO ESTOY SEGURO DE PORQUE SE ENVIAN LOS DATOS DE FRENO E INCLINACION; LO DEJO PARA QUE DESP SEA REVISADO
                     if (received_data.origen == SENSOR_FRENO) {
                         display_data.data.freno_on_off = received_data.freno_on_off;
+                        display_data.contains_data = true;
+                        display_data.pantalla = BALANZA_RESUMEN;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
+                        }
+                    }
+
+                    if (received_data.origen == SENSOR_ACELEROMETRO) {
+                        display_data.data.inclinacion = received_data.inclinacion;
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
