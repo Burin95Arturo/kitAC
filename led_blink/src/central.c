@@ -48,6 +48,7 @@ void nuevo_central(void *pvParameters) {
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
     static bool barandales_arriba = false;
+    static uint16_t contador_vueltas = 0;
 
     central_data_t received_data;
     estados_central_t estado_actual = STATE_BIENVENIDA;
@@ -79,9 +80,9 @@ void nuevo_central(void *pvParameters) {
         switch (estado_actual) {
             case STATE_BIENVENIDA:
                 // New twist: Vamos a hacer que, si se toca algún botón en esta pantalla, se entra al modo test
-                //xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 0;
+                expected_responses = 1;
 
                 display_data.contains_data = false; 
                 display_data.pantalla = BIENVENIDA;
@@ -310,17 +311,17 @@ void nuevo_central(void *pvParameters) {
 
         }
 
-        if (estado_actual == STATE_BIENVENIDA) {
-            
-            vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-            // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
-            // Si hay algún botón en cola, significa que se quiere entrar a TESTS
-            if (flag_tests) {
-                estado_actual = STATE_TESTS;
-            } else {
-                estado_actual = STATE_INICIAL;
-            }
-        } // Fin ESTADO BIENVENIDA
+        //if (estado_actual == STATE_BIENVENIDA) {
+        //    
+        //    vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
+        //    // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
+        //    // Si hay algún botón en cola, significa que se quiere entrar a TESTS
+        //    if (flag_tests) {
+        //        estado_actual = STATE_TESTS;
+        //    } else {
+        //        estado_actual = STATE_INICIAL;
+        //    }
+        //} // Fin ESTADO BIENVENIDA
 
         // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
@@ -414,6 +415,29 @@ void nuevo_central(void *pvParameters) {
                 // Según el estado actual, se envían datos a la pantalla o se hacen transiciones.
                 // Los break son para salir del while de recepción y cambiar al siguiente estado.
                 
+                /************************************** Estado BIENVENIDA *****************************************/
+                if (estado_actual == STATE_BIENVENIDA) {
+
+                    //Si se toca la tecla 1, se va a TESTS, sino queda en Bienvenida por cierto tiempo
+                    if (received_data.origen == BUTTON_EVENT) {
+    
+                        if (received_data.button_event == EVENT_BUTTON_1){
+                            estado_actual = STATE_TESTS;
+                            break;
+                        } else {
+                            contador_vueltas++;
+                            if (contador_vueltas >= 10) { // Si pasan 10 ciclos sin tocar el botón, se va a INICIAL igual
+                                estado_actual = STATE_INICIAL;
+                                break;
+                            }
+                        
+                        }
+
+                    }
+                } // FIN ESTADO BIENVENIDA
+                
+
+
                 /************************************** Estado TESTS *****************************************/
                 if (estado_actual == STATE_TESTS) {
                     // Enviamos los datos recibidos a la cola del display

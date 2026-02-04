@@ -20,28 +20,28 @@ void button_task(void *pvParameters) {
 
         // Leer el estado de los botones
         if (gpio_get_level(BUTTON_1) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(5));
             if (gpio_get_level(BUTTON_1) == 0) {
                 event = EVENT_BUTTON_1;
                 button_pressed = true;
             }
         } 
         if (gpio_get_level(BUTTON_2) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(5));
             if (gpio_get_level(BUTTON_2) == 0) {
                 event = EVENT_BUTTON_2;
                 button_pressed = true;
             }
         } 
         if (gpio_get_level(BUTTON_3) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(5));
             if (gpio_get_level(BUTTON_3) == 0) {
                 event = EVENT_BUTTON_3;
                 button_pressed = true;
             }
         }
         if (gpio_get_level(BUTTON_4) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(5));
             if (gpio_get_level(BUTTON_4) == 0) {
                 event = EVENT_BUTTON_4;
                 button_pressed = true;
