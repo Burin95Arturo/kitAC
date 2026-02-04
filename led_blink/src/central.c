@@ -272,7 +272,7 @@ void nuevo_central(void *pvParameters) {
 
         // --------------------- FIN BLOQUE 1: LÓGICA DE ENTRADA Y REPETICIÓN DEL ESTADO --------------------- //
 
-        // --------------------- BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
+        // --------------------- BLOQUE 2: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
         // Transicionan solos después de un tiempo 
         if (estado_actual == STATE_ALERTA_BARANDALES) {
@@ -310,24 +310,11 @@ void nuevo_central(void *pvParameters) {
             // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER
 
         }
-
-        //if (estado_actual == STATE_BIENVENIDA) {
-        //    
-        //    vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-        //    // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
-        //    // Si hay algún botón en cola, significa que se quiere entrar a TESTS
-        //    if (flag_tests) {
-        //        estado_actual = STATE_TESTS;
-        //    } else {
-        //        estado_actual = STATE_INICIAL;
-        //    }
-        //} // Fin ESTADO BIENVENIDA
-
-        // --------------------- FIN BLOQUE 3: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
+        // --------------------- FIN BLOQUE 2: ESTADOS QUE NO DEPENDEN DE DATOS EN LA COLA ---------------------------------- //
 
 
 
-        // --------------------- BLOQUE 2: LÓGICA DE ESPERA Y PROCESAMIENTO ---------------------------------- //
+        // --------------------- BLOQUE 3: LÓGICA DE ESPERA Y PROCESAMIENTO ---------------------------------- //
         
         // Esperamos datos en cola.
         // Implementamos un timeout para no bloquearnos por siempre.
@@ -436,8 +423,6 @@ void nuevo_central(void *pvParameters) {
                     }
                 } // FIN ESTADO BIENVENIDA
                 
-
-
                 /************************************** Estado TESTS *****************************************/
                 if (estado_actual == STATE_TESTS) {
                     // Enviamos los datos recibidos a la cola del display
@@ -636,21 +621,9 @@ void nuevo_central(void *pvParameters) {
                         contador_estado_pesando++;
                         peso_calculado += received_data.peso_total;
                     }
-                    
-                    // if (received_data.origen == CALCULO_PESO) {
-                    //     // Envio el valor del peso a display.
-                    //     display_data.data.peso_total = received_data.peso_total;
-                    //     display_data.contains_data = true;
-                    //     display_data.pantalla = PESANDO;
-                    //     display_data.data.origen = CALCULO_PESO;
-                    //     if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                    //         printf("Error enviando datos en pantalla PESANDO.\n");
-                    //     }
-                    // }
-                    
+                                      
                     if (contador_estado_pesando >= MUESTRAS_PROMEDIO) {
                         // Después de obtener suficientes muestras, vuelvo a BALANZA_RESUMEN
-                        //aca falta promediar y mostrar
                         contador_estado_pesando = 0;
 
                         display_data.contains_data = true;
@@ -661,7 +634,6 @@ void nuevo_central(void *pvParameters) {
                         }                      
                         vTaskDelay(pdMS_TO_TICKS(3000)); // Mostrar el peso por 3 segundos
                         // Guardo el peso calculado para mostrarlo en BALANZA_RESUMEN
-                        //peso_calculado = received_data.peso_total;
                         peso_calculado = peso_calculado / MUESTRAS_PROMEDIO;
                         flag_mostrar_peso = true;
                         estado_actual = STATE_BALANZA_RESUMEN;
@@ -670,25 +642,12 @@ void nuevo_central(void *pvParameters) {
 
                 } // Fin ESTADO PESANDO
                 
-                /*if (estado_actual == STATE_BIENVENIDA) {
-                    vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
-                    
-                    // Después de 3 segundos, evaluar si se presionó algún botón (por ahora, cualquiera)
-                    // Si hay algún botón en cola, significa que se quiere entrar a TESTS
-                    if (received_data.origen == BUTTON_EVENT && received_data.button_event != EVENT_NO_KEY) {
-                        estado_actual = STATE_TESTS;
-                        break;
-                    } else {
-                        estado_actual = STATE_INICIAL;
-                        break;
-                    } 
-                } */// Fin ESTADO BIENVENIDA
                 
             } else {
                 // Si no se leyó datos en la cola y se cumplió el timeout esperando sensores
                 break; 
             }
-            // ------------ FIN BLOQUE 2.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN -------------- //
+            // ------------ FIN BLOQUE 3.1: ENVÍO DE DATOS Y LÓGICA DE TRANSICIÓN -------------- //
 
         } // Fin del while de recepción
         

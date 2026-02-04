@@ -712,16 +712,15 @@ void display_tft_task(void *pvParameters) {
                 break;  //Fin case pantalla PESANDO
             //--------------------------------------Fin case pantalla PESANDO----------------------------//
 
-
             default:
-
+                    printf("No entendi que pantalla dibujar\n");
                 break;
             }
         
         } //cierro xQueueReceive   
         
          contador_vueltas++;
-            if (contador_vueltas >= 2) { //Cada x vueltas ( ? segundos o más, aprox)
+            if (contador_vueltas >= 2) { //Cada x vueltas (1?) segundos o más, aprox)
                 flag_refresh_display_data = true;
                 contador_vueltas = 0;
             }
