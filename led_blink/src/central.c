@@ -43,6 +43,8 @@ void nuevo_central(void *pvParameters) {
     static bool flag_balanza1 = false;
     static bool flag_balanza2 = false;
     static bool flag_peso_calculado = false;
+    static bool flag_mostrar_peso = false;
+    static float peso_calculado = 0.0f;
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
     static bool barandales_arriba = false;
@@ -62,7 +64,7 @@ void nuevo_central(void *pvParameters) {
 
     static uint16_t contador_estado_pesando = 0;
 
-    vTaskDelay(pdMS_TO_TICKS(3000)); //Esperar a que se estabilice todo
+    vTaskDelay(pdMS_TO_TICKS(2000)); //Esperar a que se estabilice todo
 
     while (1) {
 
@@ -577,25 +579,21 @@ void nuevo_central(void *pvParameters) {
                             break; 
                         }
                     }
-
-                    // NO ESTOY SEGURO DE PORQUE SE ENVIAN LOS DATOS DE FRENO E INCLINACION; LO DEJO PARA QUE DESP SEA REVISADO
-                    if (received_data.origen == SENSOR_FRENO) {
-                        display_data.data.freno_on_off = received_data.freno_on_off;
+                    //Si vengo de PESANDO, muestro el peso calculado
+                    if (flag_mostrar_peso) {
+                        // Envio el valor del peso a display.
+                        display_data.data.peso_total = peso_calculado;
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
+                        display_data.data.origen = CALCULO_PESO;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
+                            printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
                         }
+                        flag_mostrar_peso= false;
+                        peso_calculado = 0.0f; // Reiniciar el peso calculado para la próxima vez
                     }
 
-                    if (received_data.origen == SENSOR_ACELEROMETRO) {
-                        display_data.data.inclinacion = received_data.inclinacion;
-                        display_data.contains_data = true;
-                        display_data.pantalla = BALANZA_RESUMEN;
-                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
-                        }
-                    }
+                    
                 } //FIN ESTADO BALANZA_RESUMEN
 
                 /************************************** Estado PESANDO ***************************************/
@@ -603,7 +601,16 @@ void nuevo_central(void *pvParameters) {
 
                     if (flag_peso_calculado) {
                         flag_peso_calculado = false;
+                        // Envio el valor del peso a display.
+                        display_data.data.peso_total = received_data.peso_total;
+                        display_data.contains_data = true;
+                        display_data.pantalla = PESANDO;
+                        display_data.data.origen = CALCULO_PESO;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                            printf("Error enviando datos en pantalla PESANDO.\n");
+                        }
                         contador_estado_pesando++;
+                        peso_calculado += received_data.peso_total;
                     }
                     
                     // if (received_data.origen == CALCULO_PESO) {
@@ -619,17 +626,20 @@ void nuevo_central(void *pvParameters) {
                     
                     if (contador_estado_pesando >= MUESTRAS_PROMEDIO) {
                         // Después de obtener suficientes muestras, vuelvo a BALANZA_RESUMEN
-                        // Envio el valor del peso a display.
+                        //aca falta promediar y mostrar
+                        contador_estado_pesando = 0;
 
-                        display_data.data.peso_total = received_data.peso_total;
                         display_data.contains_data = true;
                         display_data.pantalla = PESANDO;
-                        display_data.data.origen = CALCULO_PESO;
+                        display_data.data.origen = NOTIFY_PESAJE_COMPLETADO;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
                             printf("Error enviando datos en pantalla PESANDO.\n");
-                        }
-
-                        contador_estado_pesando = 0;
+                        }                      
+                        vTaskDelay(pdMS_TO_TICKS(3000)); // Mostrar el peso por 3 segundos
+                        // Guardo el peso calculado para mostrarlo en BALANZA_RESUMEN
+                        //peso_calculado = received_data.peso_total;
+                        peso_calculado = peso_calculado / MUESTRAS_PROMEDIO;
+                        flag_mostrar_peso = true;
                         estado_actual = STATE_BALANZA_RESUMEN;
                         break;
                     }

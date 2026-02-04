@@ -27,8 +27,8 @@ static FontxFile ilgh24fx[2];
 static FontxFile Cons32fx[2];
 
 static display_t received_data;
-pantallas_t pantalla_actual = BIENVENIDA;
-pantallas_t pantalla_anterior = BIENVENIDA;
+pantallas_t pantalla_actual = CONFIGURACION;
+pantallas_t pantalla_anterior = CONFIGURACION;
 
 
 void init_spiffs(char * path) {
@@ -176,8 +176,10 @@ void display_tft_task(void *pvParameters) {
     char string_teclado[4];
 
     uint8_t altura = 70;
-    uint8_t altura_prev = 33;
+    uint8_t altura_prev = 71;
     char string_altura[4];
+    bool posicion_segura = true;
+    bool posicion_segura_prev = false;
 
     uint8_t contador_vueltas = 0;
     bool flag_refresh_display_data = true;
@@ -417,7 +419,11 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
                         freno_ok_prev = false;
                         angulo_prev = 255; //Valor imposible
-                        altura_prev = 255; //Valor imposible
+                        
+                        lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+                        lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
+                        posicion_segura = true;
+                        posicion_segura_prev = true;
 
                     //Iconito de grados
                     lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
@@ -474,22 +480,27 @@ void display_tft_task(void *pvParameters) {
 
                         case SENSOR_ALTURA:
                         altura = (u_int8_t)round(received_data.data.altura);
-                        if (altura != altura_prev) {
 
-                            if (altura < ALTURA_SEGURA_MIN_CM) {
+                        if (altura < ALTURA_SEGURA_MIN_CM) {
+                            posicion_segura = true;
+                        } else {
+                            posicion_segura = false;
+                        }
+                        if (posicion_segura != posicion_segura_prev) {
+
+                            if (posicion_segura) {
                                 lcdDrawFillRect(&dev, 140, 271, 169, 300, WHITE);
                                 lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
                                 lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
                                 lcdDrawFillRect(&dev, 154, 31, 180, 178, WHITE);
                                 lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
                             } else {
-                                lcdDrawBMP(&dev, "/data/cruz.bmp", 20, 140);
                                 lcdDrawFillRect(&dev, 154, 68, 180, 175, WHITE);
+                                lcdDrawBMP(&dev, "/data/cruz.bmp", 20, 140);
                                 lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", RED);
                                 lcdDrawString(&dev, Cons32fx, 180, 178, (uint8_t *)"NO SEGURA", RED);
-                                //Acá faltaría la parte de cambiar la imagen del tick por una cruz roja
                             }
-                            altura_prev = altura;        
+                            posicion_segura_prev = posicion_segura;      
                         }
 
                         break;
@@ -576,13 +587,11 @@ void display_tft_task(void *pvParameters) {
                     switch (received_data.data.origen)
                     {
                         case CALCULO_PESO: 
-                        //PESO ACTUAL
-                        if (flag_refresh_display_data) {
-                            lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
-                            sprintf(string_peso, "%.2f", received_data.data.peso_total);
-                            lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
-                            flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
-                        }
+                        //PESO CALCULADO
+                        lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
+                        sprintf(string_peso, "%.2f", received_data.data.peso_total);
+                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
+                        
                         break;
 
                         case PESO_MEMORIA:
