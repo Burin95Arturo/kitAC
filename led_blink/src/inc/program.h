@@ -6,6 +6,8 @@
 #include "freertos/queue.h"
 
 #include "freertos/semphr.h"
+#include "inc/nvs_manager.h"
+
 
 // Número de lecturas por solicitud (ajustable)
 #ifndef HX711_READ_ITERATIONS
@@ -24,6 +26,15 @@
 
 // Umbral mínimo para mostrar peso (filtro de ruido)
 #define PESO_MINIMO_KG  2.0f
+
+// Umbral mínimo para indicar posición segura (altura en unidades del sensor)
+#define ALTURA_SEGURA_MIN_CM  40  // Ajustable según cama
+
+// Nivel para detección de freno activado (botón presionado)
+#define NIVEL_FRENO_ACTIVADO  0  // Ajustable según conexión física
+
+// Ángulo máximo permitido para considerarlo horizontal
+#define ANGULO_MAXIMO_PERMITIDO 5.0f // Grados
 
 typedef enum {
     EVENT_BUTTON_1=1,
@@ -64,6 +75,8 @@ typedef enum {
     CALCULO_PESO,
     SENSOR_ACELEROMETRO,
     TEST_TASK,
+    PESO_MEMORIA,
+    NOTIFY_PESAJE_COMPLETADO,
     BUTTON_EVENT
 } sensor_origen_t;
 typedef enum {
@@ -102,10 +115,16 @@ typedef struct {
 
 typedef enum {
     BIENVENIDA=0,
+    APAGADA,
     INICIAL, 
-    BALANZA,
+    BALANZA_RESUMEN,
     TESTS,
-    CONFIGURACION
+    CONFIGURACION,
+    ERROR_CABECERA,
+    ERROR_FRENO,
+    PESANDO, 
+    AJUSTE_CERO,
+    ALERTA_BARANDALES
 } pantallas_t;
 
 typedef struct {
@@ -124,10 +143,13 @@ typedef enum {
     STATE_BALANZA_RESUMEN,
     STATE_PESANDO,
     STATE_ERROR_CABECERA,
-    STATTE_AJUSTE_CERO,    
+    STATE_ERROR_FRENO,
+    STATE_AJUSTE_CERO,    
     // ... otros estados
 } estados_central_t;
 
+extern int32_t tara_b1; 
+extern int32_t tara_b2;
 
 // static const char *TAG;
 

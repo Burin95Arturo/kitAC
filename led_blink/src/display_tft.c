@@ -27,7 +27,8 @@ static FontxFile ilgh24fx[2];
 static FontxFile Cons32fx[2];
 
 static display_t received_data;
-pantallas_t pantalla_actual = BIENVENIDA;
+pantallas_t pantalla_actual = CONFIGURACION;
+pantallas_t pantalla_anterior = CONFIGURACION;
 
 
 void init_spiffs(char * path) {
@@ -159,16 +160,15 @@ void display_tft_task(void *pvParameters) {
     int8_t angulo_prev=37;
     char string_angulo[5];
 
-    float peso = 55.5;
-    float peso_prev = 55.5;
     char string_peso[8]; //Espacio para poder poner "-100.00" + NULL
+    char string_peso_memoria[8]; //Espacio para poder poner "-100.00" + NULL
 
     bool barandales_arriba = true;
-    bool barandales_arriba_prev = true;
+    bool barandales_arriba_prev = false;
     char string_barandales[7];
 
     bool freno_ok = true;
-    bool freno_ok_prev = true;
+    bool freno_ok_prev = false;
     char string_freno[4];
 
     uint8_t teclado_num = 1;
@@ -176,8 +176,10 @@ void display_tft_task(void *pvParameters) {
     char string_teclado[4];
 
     uint8_t altura = 70;
-    uint8_t altura_prev = 33;
+    uint8_t altura_prev = 71;
     char string_altura[4];
+    bool posicion_segura = true;
+    bool posicion_segura_prev = false;
 
     uint8_t contador_vueltas = 0;
     bool flag_refresh_display_data = true;
@@ -204,16 +206,6 @@ void display_tft_task(void *pvParameters) {
     init_spiffs("/data");
     //---------------------------------------//
     
-    //--------Pantalla de Bienvenida--------//
-
-    lcdDrawBMP(&dev, "/data/kitac_logo.bmp", 99, 30);
-    lcdDrawBMP(&dev, "/data/utn_logo.bmp", 228, 207);
-    vTaskDelay(pdMS_TO_TICKS(3000));  
-
-    lcdFillScreen(&dev, WHITE);
-    /******************************************/ 
-
-
     while (1) {
 
         // Leer de la cola central_queue
@@ -232,8 +224,20 @@ void display_tft_task(void *pvParameters) {
         
             switch (received_data.pantalla)
             {
+            case BIENVENIDA:
+                //--------------------------------------Pantalla BIENVENIDA--------------------------------------//
+                if (pantalla_actual != BIENVENIDA) {
+                    pantalla_actual = BIENVENIDA;
+                    //Dibujar campos pantalla BIENVENIDA completa//
+                    lcdDrawBMP(&dev, "/data/kitac_logo.bmp", 99, 30);
+                    lcdDrawBMP(&dev, "/data/utn_logo.bmp", 228, 207);
+                }
+                /******************************************/ 
+                break;
+
+
             case TESTS:
-                /* code */
+            //--------------------------------------Pantalla TESTS--------------------------------------//
                 if (pantalla_actual != TESTS) {
                     pantalla_actual = TESTS;
                     //Dibujar campos pantalla TESTS completa//
@@ -254,7 +258,6 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 100, 295, (uint8_t *)"BALANZA:", AZUL_OCEANO);
                         lcdDrawString(&dev, ilgh24fx, 100, 103, (uint8_t *)"kg", VERDE_OSCURO);
 
-
                         //BARANDALES
                         lcdDrawString(&dev, ilgh24fx, 130, 295, (uint8_t *)"BARANDALES:", AZUL_OCEANO);
                         strcpy(string_barandales, "ARRIBA"); //Sólo para inicializar
@@ -263,11 +266,9 @@ void display_tft_task(void *pvParameters) {
                         lcdDrawString(&dev, ilgh24fx, 160, 295, (uint8_t *)"FRENO:", AZUL_OCEANO);
                         strcpy(string_freno, "OK"); //Sólo para inicializar
 
-
                         //TECLADO
                         lcdDrawString(&dev, ilgh24fx, 190, 295, (uint8_t *)"TECLADO:", AZUL_OCEANO);
                         sprintf(string_teclado, "%d", teclado_num); //Sólo para inicializar
-
 
                         //ALTURA
                         lcdDrawString(&dev, ilgh24fx, 220, 295, (uint8_t *)"ALTURA:", AZUL_OCEANO);
@@ -369,10 +370,10 @@ void display_tft_task(void *pvParameters) {
                                 break;
 
                             case EVENT_NO_KEY:
-                                teclado_num = 8;
+                                teclado_num = 0;
                                 break;
                             default:
-                                teclado_num = 8;
+                                teclado_num = 0;
                                 break;
                             }   
 
@@ -393,63 +394,152 @@ void display_tft_task(void *pvParameters) {
 
                 } // Fin if contiene datos
 
-                break; //Fin case TESTS
+                break; 
+            //--------------------------------------Fin case pantalla TESTS--------------------------------//
 
             case INICIAL:
-                /* code */
+
+            //--------------------------------------Pantalla Inicial--------------------------------------//
+
                 if (pantalla_actual != INICIAL) {
                     pantalla_actual = INICIAL;
-                //--------Pantalla Inicial--------//
-                //ESTAS VARIABLES SON DE PRUEBA, LUEGO VAN A VENIR DE LA COLA
-                    //Barra superior de indicación de freno    
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                    if (pantalla_anterior == APAGADA) {
+                        //Si vengo de APAGADA, prender el backlight
+                        //Si está disponible, prender el backlight
+                        pantalla_anterior = INICIAL; //Actualizar pantalla anterior
 
-                    //lcdDrawString(&dev, ilgh24fx, 80, 110, (uint8_t *)"Cabecera", BLACK);
+                    }
+                    //Dibujar campos pantalla INICIAL completa//
+                    //--------Campos Pantalla INICIAL--------//
+                    lcdFillScreen(&dev, WHITE);
+
+                    //Reset de variables internas:
+                        //Esto es para que no se buguee 
+                        lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                        lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+                        freno_ok_prev = false;
+                        angulo_prev = 255; //Valor imposible
+                        
+                        lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+                        lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
+                        posicion_segura = true;
+                        posicion_segura_prev = true;
+
                     //Iconito de grados
-                    lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)"37", AZUL_OCEANO);
                     lcdDrawFillCircle(&dev, 85, 127, 3, AZUL_OCEANO);
-                        lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
+                    lcdDrawBMP(&dev, "/data/inclinacion.bmp", 40, 65);
 
                     //Iconito de altura
-                    lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
-                    lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
-                        lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
-                        lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
-
+                    lcdDrawBMP(&dev, "/data/altura.bmp", 60, 125);
+                    lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
 
                     //Barra inferior con opciones
                     lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
-
                         lcdDrawFillRect(&dev, 207, 283, 229, 306, AZUL_OCEANO);
                         lcdDrawRect(&dev, 230, 307, 206, 282, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 300, (uint8_t *)"1", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 270, (uint8_t *)"Balanza", BLACK);
-                    
-                    lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
-                    lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
+                        lcdDrawFillRect(&dev, 207, 103, 229, 126, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 230, 127, 206, 104, BLACK);
                     lcdDrawString(&dev, ilgh24fx, 230, 120, (uint8_t *)"2", WHITE);
-
                     lcdDrawString(&dev, ilgh24fx, 230, 95, (uint8_t *)"Apagar", BLACK);
-
-                    vTaskDelay(pdMS_TO_TICKS(5000));  
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
-                    lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
-                    vTaskDelay(pdMS_TO_TICKS(5000));
-                    lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
-                    lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
-                //--------Fin Pantalla Inicial--------//
+                //--------Fin Campos Pantalla Inicial--------//
                 }
-                break;  
+                //--------Actualizar datos Pantalla INICIAL--------//
+                
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
 
-            case BALANZA:
+                    switch (received_data.data.origen)
+                    {
+                        case SENSOR_ACELEROMETRO:
+                        //Campo con ángulo
+                        angulo = (u_int8_t)round(received_data.data.inclinacion);
+                        if (angulo < 0) angulo = angulo * -1; //Valor absoluto
+                        if (angulo != angulo_prev) {
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);
+                            sprintf(string_angulo, "%d", angulo);
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                            angulo_prev = angulo;
+                        }
+                        break;
+
+                        case SENSOR_FRENO:
+                        //Barra superior de indicación de freno    
+                        freno_ok = received_data.data.freno_on_off;
+                        if (freno_ok != freno_ok_prev) {
+                            if (freno_ok) {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, VERDE_TEMA);
+                                lcdDrawString(&dev, ilgh24fx, 34, 220, (uint8_t *)"FRENO OK", WHITE);
+                            } else {
+                                lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                                lcdDrawString(&dev, ilgh24fx, 34, 235, (uint8_t *)"REVISAR FRENO", WHITE);
+                            }
+                            freno_ok_prev = freno_ok;
+                        }
+
+                        case SENSOR_ALTURA:
+                        altura = (u_int8_t)round(received_data.data.altura);
+
+                        if (altura < ALTURA_SEGURA_MIN_CM) {
+                            posicion_segura = true;
+                        } else {
+                            posicion_segura = false;
+                        }
+                        if (posicion_segura != posicion_segura_prev) {
+
+                            if (posicion_segura) {
+                                lcdDrawFillRect(&dev, 140, 271, 169, 300, WHITE);
+                                lcdDrawBMP(&dev, "/data/tick.bmp", 20, 140);
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", GREEN);
+                                lcdDrawFillRect(&dev, 154, 31, 180, 178, WHITE);
+                                lcdDrawString(&dev, Cons32fx, 180, 165, (uint8_t *)"SEGURA", GREEN);
+                            } else {
+                                lcdDrawFillRect(&dev, 154, 68, 180, 175, WHITE);
+                                lcdDrawBMP(&dev, "/data/cruz.bmp", 20, 140);
+                                lcdDrawString(&dev, Cons32fx, 155, 180, (uint8_t *)"POSICION", RED);
+                                lcdDrawString(&dev, Cons32fx, 180, 178, (uint8_t *)"NO SEGURA", RED);
+                            }
+                            posicion_segura_prev = posicion_segura;      
+                        }
+
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla INICIAL.\n");
+                        break;
+
+                    
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+                break;  
+                //--------Fin actualizar datos Pantalla INICIAL--------//
+
+            //--------------------------------------Fin case pantalla INICIAL------------------------------//
+
+            case APAGADA:
+
+            //--------------------------------------Pantalla Apagada--------------------------------------//
+
+                if (pantalla_actual != APAGADA) {
+                    pantalla_actual = APAGADA;
+                    lcdFillScreen(&dev, BLACK);
+                    
+                    //Si está disponible, apagar el backlight
+                    pantalla_anterior = APAGADA; //Guardar pantalla anterior para cuando se encienda de nuevo
+                }
+                break;  //Fin case pantalla 
+            //--------------------------------------Fin case pantalla APAGADA----------------------------//
+   
+            //-------------------------------Pantalla BALANZA_RESUMEN------------------------------------//
+            case BALANZA_RESUMEN:
                 /* code */
-                if (pantalla_actual != BALANZA) {
-                    pantalla_actual = BALANZA;
+                if (pantalla_actual != BALANZA_RESUMEN) {
+                    pantalla_actual = BALANZA_RESUMEN;
                     //Dibujar campos pantalla BALANZA//
                     //--------Campos Pantalla Balanza--------//
-                        lcdDrawFillRect(&dev, 45, 0, 239, 319, WHITE);
+                        lcdFillScreen(&dev, WHITE);
 
                         //Barra superior con texto y botón 
                         lcdDrawFillRect(&dev, 0, 0, 44, 320, NARANJITA);
@@ -461,37 +551,167 @@ void display_tft_task(void *pvParameters) {
                         //Peso actual
                         lcdDrawBMP(&dev, "/data/pesa.bmp", 32, 60);
                         lcdDrawString(&dev, Cons32fx, 85, 210, (uint8_t *)"Peso actual:", BLACK);
-                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)"73,4 kg", AZUL_OCEANO);
+                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)"--,- kg", AZUL_OCEANO);
 
                         //Último peso
                         lcdDrawBMP(&dev, "/data/historial.bmp", 40, 140);
                         lcdDrawString(&dev, ilgh24fx, 160, 200, (uint8_t *)"Ultimo peso:", GRIS);
-                        lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)"72,8 kg", GRIS);
+                        lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)"--,- kg", GRIS);
 
 
 
                         //Barra inferior con opciones
                         lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
 
-                        lcdDrawFillRect(&dev, 207, 286, 229, 309, AZUL_OCEANO);
-                        lcdDrawRect(&dev, 230, 310, 206, 285, BLACK);
-                        lcdDrawString(&dev, ilgh24fx, 230, 303, (uint8_t *)"2", WHITE);
-                        lcdDrawString(&dev, ilgh24fx, 230, 278, (uint8_t *)"Guardar", BLACK);
+                        lcdDrawFillRect(&dev, 207, 288, 229, 311, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 230, 312, 206, 287, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 305, (uint8_t *)"2", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 280, (uint8_t *)"Guardar", BLACK);
 
-                        lcdDrawFillRect(&dev, 207, 155, 229, 180, AZUL_OCEANO);
-                        lcdDrawRect(&dev, 206, 156, 230, 179, BLACK);
-                        lcdDrawString(&dev, ilgh24fx, 230, 172, (uint8_t *)"3", WHITE);
-                        lcdDrawString(&dev, ilgh24fx, 230, 149, (uint8_t *)"Cero", BLACK);
+                        lcdDrawFillRect(&dev, 207, 160, 229, 185, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 206, 161, 230, 184, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 177, (uint8_t *)"3", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 154, (uint8_t *)"Cero", BLACK);
 
-                        lcdDrawFillRect(&dev, 207, 155, 229, 180, AZUL_OCEANO);
-                        lcdDrawRect(&dev, 206, 156, 230, 179, BLACK);
-                        lcdDrawString(&dev, ilgh24fx, 230, 172, (uint8_t *)"3", WHITE);
-                        lcdDrawString(&dev, ilgh24fx, 230, 149, (uint8_t *)"Cero", BLACK);
+                        lcdDrawFillRect(&dev, 207, 70, 229, 95, AZUL_OCEANO);
+                        lcdDrawRect(&dev, 206, 71, 230, 94, BLACK);
+                        lcdDrawString(&dev, ilgh24fx, 230, 87, (uint8_t *)"4", WHITE);
+                        lcdDrawString(&dev, ilgh24fx, 230, 64, (uint8_t *)"Atras", BLACK);
 
 
                 }
-                break;
-                
+                //--------Actualizar datos Pantalla BALANZA_RESUMEN--------//
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
+
+                    switch (received_data.data.origen)
+                    {
+                        case CALCULO_PESO: 
+                        //PESO CALCULADO
+                        lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
+                        sprintf(string_peso, "%.2f", received_data.data.peso_total);
+                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
+                        
+                        break;
+
+                        case PESO_MEMORIA:
+                            lcdDrawFillRect(&dev,164,132,185,180, WHITE);
+                            sprintf(string_peso_memoria, "%.2f", received_data.data.peso_total);
+                            lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)&string_peso_memoria, GRIS);
+
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla BALANZA_RESUMEN.\n");
+                        break;
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+                break;  
+                //--------Fin actualizar datos Pantalla BALANZA_RESUMEN--------//
+
+            //--------------------------------------Fin case pantalla BALANZA_RESUMEN---------------------//
+
+            case ALERTA_BARANDALES:
+
+            //--------------------------------------Pantalla ERROR_BARANDALES--------------------------------------//
+
+                if (pantalla_actual != ALERTA_BARANDALES) {
+                    pantalla_actual = ALERTA_BARANDALES;
+                    
+                    lcdDrawFillRect(&dev, 0,0,44,319, WHITE);
+                    lcdDrawFillRect(&dev, 196,0,239,319, WHITE);
+                    lcdDrawFillRect(&dev, 44,0,196,319, AMARILLITO);
+                    lcdDrawBMP(&dev, "/data/warning_amarillo.bmp", 65, 55);
+                    lcdDrawString(&dev, Cons32fx, 88, 210, (uint8_t *)"ATENCION", BLACK);
+                    lcdDrawString(&dev, Cons32fx, 158, 288, (uint8_t *)"BARANDALES BAJOS", BLACK);
+                    lcdDrawRect(&dev, 124,28,163,293, BLACK);
+
+                }
+                break;  //Fin case pantalla ERROR_BARANDALES
+            //--------------------------------------Fin case pantalla ERROR_BARANDALES----------------------------//
+            
+            case ERROR_CABECERA:
+
+            //--------------------------------------Pantalla ERROR_CABECERA--------------------------------------//
+
+                if (pantalla_actual != ERROR_CABECERA) {
+                    pantalla_actual = ERROR_CABECERA;
+                    
+                    lcdDrawFillRect(&dev, 44,0,196,319, RED);
+                    lcdDrawBMP(&dev, "/data/warning_rojo.bmp", 95, 55);
+                    lcdDrawString(&dev, Cons32fx, 88, 180, (uint8_t *)"ERROR", WHITE);
+                    lcdDrawString(&dev, ilgh24fx, 138, 291, (uint8_t *)"LA CABECERA DEBE ESTAR", WHITE);
+                    lcdDrawString(&dev, ilgh24fx, 162, 291, (uint8_t *)"EN POSICION HORIZONTAL", WHITE);
+
+                }
+                break;  //Fin case pantalla ERROR_CABECERA
+            //--------------------------------------Fin case pantalla ERROR_CABECERA----------------------------//
+
+            case ERROR_FRENO:
+
+            //--------------------------------------Pantalla ERROR_FRENO--------------------------------------//
+
+                if (pantalla_actual != ERROR_FRENO) {
+                    pantalla_actual = ERROR_FRENO;
+                    
+                    lcdDrawFillRect(&dev, 44,0,196,319, RED);
+                    lcdDrawBMP(&dev, "/data/warning_rojo.bmp", 95, 55);
+                    lcdDrawString(&dev, Cons32fx, 88, 180, (uint8_t *)"ERROR", WHITE);
+                    lcdDrawString(&dev, ilgh24fx, 150, 268, (uint8_t *)"FRENO NO ACTIVADO", WHITE);
+
+                }
+                break;  //Fin case pantalla ERROR_FRENO
+            //--------------------------------------Fin case pantalla ERROR_FRENO----------------------------//
+
+            case PESANDO:
+
+            //--------------------------------------Pantalla PESANDO--------------------------------------//
+
+                if (pantalla_actual != PESANDO) {
+                    pantalla_actual = PESANDO;
+
+                    lcdDrawFillRect(&dev, 140,0,196,319, WHITE);
+                    lcdDrawFillRect(&dev, 0, 0, 44, 320, RED);
+                    lcdDrawString(&dev, ilgh24fx, 34, 202, (uint8_t *)"PESANDO", WHITE);
+
+                    lcdDrawString(&dev, ilgh24fx, 155, 280, (uint8_t *)"NO MUEVA AL PACIENTE", BLACK);
+                    lcdDrawBMP(&dev, "/data/warning_blanco.bmp", 142, 160);
+
+
+                }
+                 //--------Actualizar datos Pantalla PESANDO--------//
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
+
+                    switch (received_data.data.origen)
+                    {
+                        case CALCULO_PESO: 
+                        //PESO ACTUAL
+                        if (flag_refresh_display_data) {
+                            lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
+                            sprintf(string_peso, "%.2f", received_data.data.peso_total);
+                            lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
+                            flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
+                        }
+                        break;
+
+                        case NOTIFY_PESAJE_COMPLETADO: 
+                        //Dibujar barra verde de pesaje completado
+                            lcdDrawFillRect(&dev, 0,0,44,319, VERDE_TEMA);
+                            lcdDrawString(&dev, ilgh24fx, 34, 262, (uint8_t *)"PESAJE COMPLETADO", WHITE);
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla PESANDO.\n");
+                        break;
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+
+                break;  //Fin case pantalla PESANDO
+            //--------------------------------------Fin case pantalla PESANDO----------------------------//
+
 
             default:
 
@@ -500,7 +720,6 @@ void display_tft_task(void *pvParameters) {
         
         } //cierro xQueueReceive   
         
-         vTaskDelay(pdMS_TO_TICKS(50));
          contador_vueltas++;
             if (contador_vueltas >= 2) { //Cada x vueltas ( ? segundos o más, aprox)
                 flag_refresh_display_data = true;
@@ -515,8 +734,6 @@ void display_tft_task(void *pvParameters) {
 void simulation_task(void *pvParameters) {
 	
     display_t sent_data;
-    sent_data.data.origen = TEST_TASK;
-    sent_data.pantalla = TESTS;
 
     sent_data.data.peso_total = 55.5;
     uint16_t teclado_num = 1;
@@ -526,8 +743,7 @@ void simulation_task(void *pvParameters) {
 
 	while(1)
 	{
-       
-    
+       /* Simulación de datos para pruebas de pantalla
         for (int8_t i = 0; i<76; i++) {
 
             //INCLINACIÓN
@@ -585,15 +801,7 @@ void simulation_task(void *pvParameters) {
             if (xQueueSend(display_queue, &sent_data, (TickType_t)0) != pdPASS) {
                 printf( "No se pudo enviar datos a display.");
             } 
-            /*else {
-                    ESP_LOGI("SIMU", "Enviado: Altura: %ld, Peso: %.2f, HALL_OnOff: %d, Freno: %d, Inclinacion: %f, Boton: %d\n",
-                    sent_data.data.altura,
-                    sent_data.data.peso,
-                    sent_data.data.hall_on_off,
-                    sent_data.data.freno_on_off,
-                    sent_data.data.inclinacion,
-                    sent_data.data.button_event);
-            }*/
+
 
             vTaskDelay(pdMS_TO_TICKS(250)); //Aumentar velocidad sacando el LOGI
 
@@ -602,7 +810,142 @@ void simulation_task(void *pvParameters) {
         teclado_num = 1;
         altura = 70;
 
+        */ //CICLO FOR DE SIMULACIÓN
+        //PANTALLA INICIAL
+        sent_data.contains_data = false; 
+        sent_data.pantalla = INICIAL;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla INICIAL.\n");
+        }
+        //Manda datos
+            //Freno
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_FRENO;   
+            sent_data.data.freno_on_off = true;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Inclinación
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ACELEROMETRO;
+            sent_data.data.inclinacion = 47.0;   
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Altura
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ALTURA;
+            sent_data.data.altura = 15;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(8000));
 
+        //BARANDALES
+        sent_data.contains_data = false; 
+        sent_data.pantalla = ALERTA_BARANDALES;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla APAGADA.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        //PANTALLA INICIAL
+        sent_data.contains_data = false; 
+        sent_data.pantalla = INICIAL;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla INICIAL.\n");
+        }
+        //Manda datos
+            //Freno
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_FRENO;   
+            sent_data.data.freno_on_off = true;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Inclinación
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ACELEROMETRO;
+            sent_data.data.inclinacion = 47.0;   
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            //Altura
+            sent_data.contains_data = true;
+            sent_data.data.origen = SENSOR_ALTURA;
+            sent_data.data.altura = 45;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla INICIAL.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(5000));
+
+        //printf("CAMBIO A BALANZA RESUMEN\n");
+        sent_data.contains_data = false; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.contains_data = true;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+
+        sent_data.contains_data = false;
+        sent_data.pantalla = ERROR_CABECERA;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla ERROR_CABECERA.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.contains_data = true;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+
+        //PESANDO
+        sent_data.contains_data = false; 
+        sent_data.pantalla = PESANDO;  
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla PESANDO.\n");
+        }
+        sent_data.contains_data = true;
+        sent_data.data.origen = CALCULO_PESO;
+        for (float peso = 45.0; peso <= 79.6; peso += 0.5) {
+            sent_data.data.peso_total = peso;
+            if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+                printf("Error enviando pantalla PESANDO.\n");
+            }
+            vTaskDelay(pdMS_TO_TICKS(100));
+
+        } 
+        sent_data.data.origen = NOTIFY_PESAJE_COMPLETADO;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        sent_data.contains_data = true; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.data.origen = CALCULO_PESO;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        sent_data.contains_data = true; 
+        sent_data.pantalla = BALANZA_RESUMEN;
+        sent_data.data.origen = PESO_MEMORIA;
+        sent_data.data.peso_total = 72.30;
+        if (xQueueSend(display_queue, &sent_data, portMAX_DELAY) != pdPASS) {
+            printf("Error enviando pantalla BALANZA RESUMEN.\n");
+        }
+        vTaskDelay(pdMS_TO_TICKS(100*100));
 
 	}
 

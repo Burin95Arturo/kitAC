@@ -8,7 +8,8 @@
 #include "inc/program.h"
 #include "esp_log.h"
 #include "freertos/queue.h"
+#include "math.h"
 
-#define MUESTRAS_PROMEDIO 100
+#define MUESTRAS_PROMEDIO 10
 
 void nuevo_central(void *pvParameters);
