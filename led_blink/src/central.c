@@ -65,6 +65,9 @@ void nuevo_central(void *pvParameters) {
 
     static uint16_t contador_estado_pesando = 0;
 
+    // Intentamos leer de la NVS, si falla (porque es la primera vez), quedan en 0
+    if (read_nvs_int("ultimo_peso_medido", &ultimo_peso_medido) != ESP_OK) ultimo_peso_medido = 0;
+
     vTaskDelay(pdMS_TO_TICKS(2000)); //Esperar a que se estabilice todo
 
     while (1) {
@@ -591,7 +594,9 @@ void nuevo_central(void *pvParameters) {
                     //Si vengo de PESANDO, muestro el peso calculado
                     if (flag_mostrar_peso) {
                         // Envio el valor del peso a display.
-                        display_data.data.peso_total = peso_calculado;
+                        //display_data.data.peso_total = peso_calculado;
+                        // Leo el último peso medido desde NVS
+                        display_data.data.peso_total = read_nvs_int("ultimo_peso_medido", (int32_t*)&ultimo_peso_medido);
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
                         display_data.data.origen = CALCULO_PESO;
@@ -635,6 +640,8 @@ void nuevo_central(void *pvParameters) {
                         vTaskDelay(pdMS_TO_TICKS(3000)); // Mostrar el peso por 3 segundos
                         // Guardo el peso calculado para mostrarlo en BALANZA_RESUMEN
                         peso_calculado = peso_calculado / MUESTRAS_PROMEDIO;
+                        // Guardo en memoria el último peso medido
+                        write_nvs_int("ultimo_peso_medido", (int32_t)(peso_calculado));
                         flag_mostrar_peso = true;
                         estado_actual = STATE_BALANZA_RESUMEN;
                         break;

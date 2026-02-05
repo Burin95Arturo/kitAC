@@ -150,6 +150,7 @@ typedef enum {
 
 extern int32_t tara_b1; 
 extern int32_t tara_b2;
+extern int32_t ultimo_peso_medido;
 
 // static const char *TAG;
 
