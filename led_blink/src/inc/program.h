@@ -77,6 +77,7 @@ typedef enum {
     TEST_TASK,
     PESO_MEMORIA,
     NOTIFY_PESAJE_COMPLETADO,
+    NOTIFY_TARA_COMPLETADA,
     BUTTON_EVENT
 } sensor_origen_t;
 typedef enum {
