@@ -6,6 +6,7 @@
 static const char *TAG = "NVS_SYSTEM";
 int32_t tara_b1; 
 int32_t tara_b2;
+int32_t ultimo_peso_medido;
 
 void vNVSTask(void *pvParameters) {
     int32_t contador = 0;
