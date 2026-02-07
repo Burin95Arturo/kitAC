@@ -712,6 +712,53 @@ void display_tft_task(void *pvParameters) {
                 break;  //Fin case pantalla PESANDO
             //--------------------------------------Fin case pantalla PESANDO----------------------------//
 
+            case AJUSTE_CERO:
+
+            //--------------------------------------Pantalla AJUSTE CERO--------------------------------------//
+
+                if (pantalla_actual != AJUSTE_CERO) {
+                    pantalla_actual = AJUSTE_CERO;
+
+                    //Barra superior con título 
+                    lcdDrawFillRect(&dev, 0, 0, 44, 320, CELESTITO);
+                    lcdDrawString(&dev, ilgh24fx, 34, 244, (uint8_t *)"AJUSTE DE CERO", WHITE);
+
+                    //Mensaje central
+                    lcdDrawString(&dev, ilgh24fx, 95, 235, (uint8_t *)"Por favor, espere", BLACK);
+                    lcdDrawBMP(&dev, "/data/loading.bmp", 20, 60);
+
+                    lcdDrawBMP(&dev, "/data/warning_blanco.bmp", 30, 132);
+                    lcdDrawString(&dev, ilgh24fx, 147, 213, (uint8_t *)"No coloque al", BLACK);
+                    lcdDrawString(&dev, ilgh24fx, 177, 243, (uint8_t *)"paciente en la cama", BLACK);
+
+                    //Barra inferior
+                    lcdDrawFillRect(&dev, 196, 0, 239, 319, CELESTITO);
+
+                }
+                 //--------Actualizar datos Pantalla AJUSTE CERO--------//
+                //Solo si el flag está activo, y poner filtro ORIGEN
+                if (received_data.contains_data){
+
+                    switch (received_data.data.origen)
+                    {
+
+                        case NOTIFY_TARA_COMPLETADA: 
+                            lcdDrawFillRect(&dev, 44,0,196,319, WHITE);
+                            lcdDrawString(&dev, ilgh24fx, 120, 255, (uint8_t *)"Ajuste guardado con", BLACK);
+                            lcdDrawString(&dev, ilgh24fx, 150, 171, (uint8_t *)"exito", BLACK);
+                            lcdDrawBMP(&dev, "/data/tick.bmp", 25, 95);
+                        break;
+                    
+                        default:
+                            printf("No se pudo procesar el dato para pantalla AJUSTE CERO.\n");
+                        break;
+                    } //Fin switch origen
+
+                } // Fin if contiene datos
+
+                break;  //Fin case pantalla PESANDO
+            //--------------------------------------Fin case pantalla PESANDO----------------------------//
+
             default:
                     printf("No entendi que pantalla dibujar\n");
                 break;
