@@ -56,7 +56,6 @@ TaskHandle_t freno_task_handle = NULL;
 TaskHandle_t teclado_task_handle = NULL;
 
 
-
 void task_blink(void *pvParameters) {
     while(true) {
         gpio_set_level(INTERNAL_LED_PIN, 1);
@@ -253,7 +252,7 @@ void user_init(void) {
     xTaskCreate(&inclinacion_task, "inclinacion_task", 4096, NULL, 1, &inclinacion_task_handle);
     xTaskCreate(&display_tft_task, "tft_task", 24576, NULL, 1, NULL); // Pila de 24kb
     // xTaskCreate(&simulation_task, "simu_task", 2048, NULL, 1, NULL);
-    xTaskCreate(&vNVSTask, "nvs_task", 4096, NULL, 1, NULL);
+    // xTaskCreate(&vNVSTask, "nvs_task", 4096, NULL, 1, NULL);
 
     xTaskCreate(&break_task, "break_task", 2048, NULL, 1, &freno_task_handle);
 

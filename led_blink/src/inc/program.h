@@ -151,10 +151,10 @@ typedef enum {
 extern int32_t tara_b1; 
 extern int32_t tara_b2;
 extern int32_t ultimo_peso_medido;
+extern int32_t write_peso_nvs;
+extern int32_t read_peso_nvs;
 
 // static const char *TAG;
 
 #endif // __PROGRAM__
 
-
-   

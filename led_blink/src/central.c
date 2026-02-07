@@ -32,7 +32,7 @@ void tara_balanzas(long raw_b1, long raw_b2) {
     // Persistimos los valores para que no se pierdan al reiniciar
     write_nvs_int("tara_b1", tara_b1);
     write_nvs_int("tara_b2", tara_b2);
-    
+    printf("Valores Raw para tarar: B1=%ld, B2=%ld\n", raw_b1, raw_b2);    
     printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
 }
 
@@ -44,6 +44,7 @@ void nuevo_central(void *pvParameters) {
     static bool flag_balanza2 = false;
     static bool flag_peso_calculado = false;
     static bool flag_mostrar_peso = false;
+    static bool flag_mostrar_ultimo_peso = true;
     static float peso_calculado = 0.0f;
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
@@ -65,9 +66,17 @@ void nuevo_central(void *pvParameters) {
 
     static uint16_t contador_estado_pesando = 0;
 
+    static esp_err_t nvs_status;
+    static esp_err_t nvs_status_write;
     // Intentamos leer de la NVS, si falla (porque es la primera vez), quedan en 0
-    if (read_nvs_int("ultimo_peso_medido", &ultimo_peso_medido) != ESP_OK) ultimo_peso_medido = 0;
-
+    nvs_status = read_nvs_int("PESO", &read_peso_nvs);
+    if (nvs_status != ESP_OK) {
+        read_peso_nvs = 0;
+        printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
+    } else {
+        printf("Peso leído de NVS: %ld\n", read_peso_nvs);
+    }    
+    
     vTaskDelay(pdMS_TO_TICKS(2000)); //Esperar a que se estabilice todo
 
     while (1) {
@@ -527,9 +536,10 @@ void nuevo_central(void *pvParameters) {
                     } 
                     
                     else {
-                        // Hay que ver si se envia algo al display o no
+                        // Pantalla con mensaje "Tarando..."?
                         if (flag_peso_calculado){
-                            tara_balanzas(received_data.peso_raw1, received_data.peso_raw2);
+                            tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
+                            flag_peso_calculado = false;
                         }
                     }
                 }
@@ -562,6 +572,25 @@ void nuevo_central(void *pvParameters) {
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             // Guardo el dato en memoria
+                            // Pantalla de "guardando dato en memoria"?
+                            // Guardo el último peso medido desde NVS y actualizo la pantalla de BALANZA_RESUMEN con ese valor
+                            flag_mostrar_ultimo_peso = true;
+                            
+                            nvs_status_write = write_nvs_int("PESO", write_peso_nvs);
+                            if (nvs_status_write != ESP_OK) {
+                                read_peso_nvs = 0;
+                                printf("nvs_status_write: %x. No se pudo escribir el último peso medido de NVS.\n", nvs_status_write);        
+                            } else {
+                                printf("Peso escrito de NVS: %ld\n", write_peso_nvs);
+                            }    
+
+                            nvs_status = read_nvs_int("PESO", &read_peso_nvs);
+                            if (nvs_status != ESP_OK) {
+                                read_peso_nvs = 0;
+                                printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
+                            } else {
+                                printf("Peso leído de NVS: %ld\n", read_peso_nvs);
+                            }
                             break; 
                         }
                         else if (received_data.button_event == EVENT_BUTTON_3){
@@ -594,9 +623,7 @@ void nuevo_central(void *pvParameters) {
                     //Si vengo de PESANDO, muestro el peso calculado
                     if (flag_mostrar_peso) {
                         // Envio el valor del peso a display.
-                        //display_data.data.peso_total = peso_calculado;
-                        // Leo el último peso medido desde NVS
-                        display_data.data.peso_total = read_nvs_int("ultimo_peso_medido", (int32_t*)&ultimo_peso_medido);
+                        display_data.data.peso_total = peso_calculado;
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
                         display_data.data.origen = CALCULO_PESO;
@@ -604,7 +631,25 @@ void nuevo_central(void *pvParameters) {
                             printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
                         }
                         flag_mostrar_peso= false;
+                        write_peso_nvs = (int32_t)peso_calculado; // Actualizo el último peso medido para mostrarlo si se pide mostrar último peso
                         peso_calculado = 0.0f; // Reiniciar el peso calculado para la próxima vez
+                    } else if (flag_mostrar_ultimo_peso) {
+                        flag_mostrar_ultimo_peso = false;
+                        nvs_status = read_nvs_int("PESO", &read_peso_nvs);
+                        vTaskDelay(pdMS_TO_TICKS(5000)); 
+                        if (nvs_status != ESP_OK) {
+                            read_peso_nvs = 0;
+                            printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
+                        } else {
+                            printf("Peso leído de NVS: %ld\n", read_peso_nvs);
+                        }
+                        display_data.data.peso_total = (float)read_peso_nvs;
+                        display_data.contains_data = true;
+                        display_data.pantalla = BALANZA_RESUMEN;
+                        display_data.data.origen = PESO_MEMORIA;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                            printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
+                        }   
                     }
 
                     
@@ -640,8 +685,6 @@ void nuevo_central(void *pvParameters) {
                         vTaskDelay(pdMS_TO_TICKS(3000)); // Mostrar el peso por 3 segundos
                         // Guardo el peso calculado para mostrarlo en BALANZA_RESUMEN
                         peso_calculado = peso_calculado / MUESTRAS_PROMEDIO;
-                        // Guardo en memoria el último peso medido
-                        write_nvs_int("ultimo_peso_medido", (int32_t)(peso_calculado));
                         flag_mostrar_peso = true;
                         estado_actual = STATE_BALANZA_RESUMEN;
                         break;
