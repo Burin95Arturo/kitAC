@@ -45,6 +45,7 @@ void nuevo_central(void *pvParameters) {
     static bool flag_peso_calculado = false;
     static bool flag_mostrar_peso = false;
     static bool flag_mostrar_ultimo_peso = true;
+    static bool flag_tara_solicitada = false;
     static float peso_calculado = 0.0f;
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
@@ -362,7 +363,8 @@ void nuevo_central(void *pvParameters) {
                 if (flag_balanza1 && flag_balanza2) {
                     // Calcular peso total
                     received_data.peso_total = calcular_peso(cuentas_raw_b1, cuentas_raw_b2);
-
+                    printf("Peso calculado CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
+                           received_data.peso_total, cuentas_raw_b1, cuentas_raw_b2);
                     flag_balanza1 = false;
                     flag_balanza2 = false;
                     flag_peso_calculado = true;
@@ -533,14 +535,28 @@ void nuevo_central(void *pvParameters) {
                             estado_actual = STATE_BALANZA_RESUMEN;
                             break;
                         }
-                    } 
-                    
-                    else {
-                        // Pantalla con mensaje "Tarando..."?
+                    } else if (flag_tara_solicitada) {
+                        display_data.contains_data = false;
+                        display_data.pantalla = AJUSTE_CERO;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
+
                         if (flag_peso_calculado){
                             tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
+                            printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
                             flag_peso_calculado = false;
                         }
+                        vTaskDelay(pdMS_TO_TICKS(1000));
+                        
+                        display_data.contains_data = true;
+                        display_data.pantalla = AJUSTE_CERO;
+                        display_data.data.origen = NOTIFY_TARA_COMPLETADA;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla INICIAL.\n");
+                        }
+                        flag_tara_solicitada = false; // Reinicio la flag para la próxima vez
+                        vTaskDelay(pdMS_TO_TICKS(1000)); // Pequeño delay para asegurar que el display procese la actualización de pantalla antes de enviar los datos
                     }
                 }
 
@@ -583,20 +599,14 @@ void nuevo_central(void *pvParameters) {
                             } else {
                                 printf("Peso escrito de NVS: %ld\n", write_peso_nvs);
                             }    
-
-                            nvs_status = read_nvs_int("PESO", &read_peso_nvs);
-                            if (nvs_status != ESP_OK) {
-                                read_peso_nvs = 0;
-                                printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
-                            } else {
-                                printf("Peso leído de NVS: %ld\n", read_peso_nvs);
-                            }
+                            
                             break; 
                         }
                         else if (received_data.button_event == EVENT_BUTTON_3){
                             if (cabecera_en_horizontal && freno_activado && barandales_arriba){
                                 // Voy a ajustar el cero
                                 estado_actual = STATE_AJUSTE_CERO;
+                                flag_tara_solicitada = true;
                                 break; 
                             } else if (!cabecera_en_horizontal){ 
                                 estado_actual = STATE_ERROR_CABECERA;
@@ -636,7 +646,6 @@ void nuevo_central(void *pvParameters) {
                     } else if (flag_mostrar_ultimo_peso) {
                         flag_mostrar_ultimo_peso = false;
                         nvs_status = read_nvs_int("PESO", &read_peso_nvs);
-                        vTaskDelay(pdMS_TO_TICKS(5000)); 
                         if (nvs_status != ESP_OK) {
                             read_peso_nvs = 0;
                             printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
@@ -668,8 +677,10 @@ void nuevo_central(void *pvParameters) {
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
                             printf("Error enviando datos en pantalla PESANDO.\n");
                         }
+                        
                         contador_estado_pesando++;
                         peso_calculado += received_data.peso_total;
+                        printf("Peso calculado promediado RAW: %.2f\n", peso_calculado);
                     }
                                       
                     if (contador_estado_pesando >= MUESTRAS_PROMEDIO) {
@@ -685,6 +696,7 @@ void nuevo_central(void *pvParameters) {
                         vTaskDelay(pdMS_TO_TICKS(3000)); // Mostrar el peso por 3 segundos
                         // Guardo el peso calculado para mostrarlo en BALANZA_RESUMEN
                         peso_calculado = peso_calculado / MUESTRAS_PROMEDIO;
+                        printf("Peso calculado promediado: %.2f\n", peso_calculado);
                         flag_mostrar_peso = true;
                         estado_actual = STATE_BALANZA_RESUMEN;
                         break;

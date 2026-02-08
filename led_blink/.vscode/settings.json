@@ -20,5 +20,6 @@
         "central.h": "c",
         "inclinacion.h": "c",
         "freertos.h": "c"
-    }
+    },
+    "idf.currentSetup": "C:/Espressif/frameworks/esp-idf-v5.4.1/"
 }
