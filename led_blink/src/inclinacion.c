@@ -65,6 +65,15 @@ void inclinacion_task(void *pvParameters) {
 		inclinacion_data.inclinacion = angulo_x;   
 //		inclinacion_data.inclinacion = 25.0f; // Valor fijo para pruebas
 		inclinacion_data.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+		
+		if (inclinacion_data.inclinacion > MAX_ANG_INCLINACION || inclinacion_data.inclinacion < MIN_ANG_INCLINACION) {
+			inclinacion_data.Is_value_an_error = true; // Marca como error si la inclinación es mayor a 90 grados o un angulo negativo (lo que no tendría sentido en este contexto)
+			inclinacion_data.inclinacion = 999.0f; // En caso de error, se envia un valor; elijo 999.
+		} else {
+			inclinacion_data.Is_value_an_error = false;
+		}
+		
+		
 		if (xQueueSend(central_queue, &inclinacion_data, pdMS_TO_TICKS(10)) != pdPASS) {
 			printf( "No se pudo enviar inclinacion a la cola.");
 		}

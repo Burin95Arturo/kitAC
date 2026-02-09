@@ -53,6 +53,7 @@ void nuevo_central(void *pvParameters) {
     static uint16_t contador_vueltas = 0;
 
     central_data_t received_data;
+    received_data.Is_value_an_error = false; //Inicialmente, no hay error
     estados_central_t estado_actual = STATE_BIENVENIDA;
     estados_central_t estado_anterior = STATE_BIENVENIDA;
 
@@ -641,6 +642,7 @@ void nuevo_central(void *pvParameters) {
                             printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
                         }
                         flag_mostrar_peso= false;
+                        peso_calculado *= 100; // Paso a entero para guardar en NVS (2 decimales)
                         write_peso_nvs = (int32_t)peso_calculado; // Actualizo el último peso medido para mostrarlo si se pide mostrar último peso
                         peso_calculado = 0.0f; // Reiniciar el peso calculado para la próxima vez
                     } else if (flag_mostrar_ultimo_peso) {
@@ -652,7 +654,7 @@ void nuevo_central(void *pvParameters) {
                         } else {
                             printf("Peso leído de NVS: %ld\n", read_peso_nvs);
                         }
-                        display_data.data.peso_total = (float)read_peso_nvs;
+                        display_data.data.peso_total = read_peso_nvs/100.0f; // Paso a float con 2 decimales
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
                         display_data.data.origen = PESO_MEMORIA;

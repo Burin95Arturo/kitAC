@@ -80,23 +80,6 @@ typedef enum {
     NOTIFY_TARA_COMPLETADA,
     BUTTON_EVENT
 } sensor_origen_t;
-typedef enum {
-    NO_CHANGE=0,
-    CHANGE, 
-    WARNING
-} states_display_t; //Borrar una vez terminada la nueva estructura de central 
-typedef struct {
-    sensor_origen_t origen;
-    long altura;
-    float inclinacion;
-    float peso_1;
-    float peso_2;
-    float peso_total;
-    bool hall_on_off;
-    bool ir_on_off;
-    bool freno_on_off;
-    button_event_t button_event;
-} data_t;  //Borrar una vez terminada la nueva estructura de central 
 
 typedef struct {
     sensor_origen_t origen;
@@ -109,10 +92,10 @@ typedef struct {
     float peso_total; //Borrar pesos, quedarse con los raw
     bool hall_on_off;
     bool freno_on_off;
+    bool Is_value_an_error;
     button_event_t button_event;
     uint32_t request_id;
 } central_data_t;
-
 
 typedef enum {
     BIENVENIDA=0,
@@ -131,7 +114,6 @@ typedef enum {
 typedef struct {
     central_data_t data;
     bool contains_data;
-    states_display_t state;
     pantallas_t pantalla;
 } display_t;
 

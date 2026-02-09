@@ -1,6 +1,9 @@
 #include "inc/hcsr04.h"
 
 long getDistance() {
+    long contador1 = 0;
+    long contador2 = 0;
+
     gpio_set_level(TRIG_PIN, 0);
     esp_rom_delay_us(2);
     gpio_set_level(TRIG_PIN, 1);
@@ -10,24 +13,37 @@ long getDistance() {
     long startTime = esp_timer_get_time();
     long endTime = startTime;
 
-    while (gpio_get_level(ECHO_PIN) == 0) {
+    while (gpio_get_level(ECHO_PIN) == 0  && contador1 < TIME_MAX_DISTANCE) {
         startTime = esp_timer_get_time();
+        contador1++;
     }
 
-    while (gpio_get_level(ECHO_PIN) == 1) {
+    while (gpio_get_level(ECHO_PIN) == 1 && contador2 < TIME_MAX_DISTANCE) {
         endTime = esp_timer_get_time();
+        contador2++;
     }
 
     long duration = endTime - startTime;
     long distance = duration / 58;
 
-    return distance;
+    if (contador1 == TIME_MAX_DISTANCE || contador2 == TIME_MAX_DISTANCE) {
+        contador1 = 0;
+        contador2 = 0;
+        return 999;
+
+    } else if (distance < MIN_DISTANCE || distance > MAX_DISTANCE) {
+                
+        return 999;
+
+    } else {
+        return distance;
+    }
+
 }
 
 void hc_sr04_task(void *pvParameters) {
   
     long distance;
-    float current_height_m = 0.0f;
     central_data_t altura;
     static uint32_t received_request_id; 
     altura.origen = SENSOR_ALTURA;
@@ -48,10 +64,15 @@ void hc_sr04_task(void *pvParameters) {
             gpio_set_level(INTERNAL_LED_PIN, 0);
         }
 
-        current_height_m = (long) distance;
         // Enviar el peso calculado a la cola
-        altura.altura = current_height_m;
+        altura.altura = distance;
         altura.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+
+        if (distance == 999) {
+            altura.Is_value_an_error = true; // Indica que hubo un error en la medición
+        } else {
+            altura.Is_value_an_error = false; // Medición válida
+        }
 
         if (xQueueSend(central_queue, &altura, pdMS_TO_TICKS(10)) != pdPASS) {
             // ESP_LOGE(TAG_3, "No se pudo enviar el peso a la cola.");

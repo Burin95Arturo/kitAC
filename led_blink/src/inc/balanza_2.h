@@ -31,4 +31,7 @@ static const char *TAG = "HX711_DRIVER_2";
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 #define SCALE_FACTOR_VALUE_2 -25652.1739f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
+#define PESO_2_RAW_MAX_KG 8388607
+#define PESO_2_RAW_MIN_KG 0
+
 void balanza_2_task(void *pvParameters);

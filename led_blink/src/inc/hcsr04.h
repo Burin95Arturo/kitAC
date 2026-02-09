@@ -12,4 +12,8 @@
 // --- Tag para el logging del ESP-IDF ---
 // static const char *TAG_3 = "HCSR04";
 
+#define TIME_MAX_DISTANCE 30000000 // Tiempo máximo para medir distancia (en microsegundos) -> 30 segundos
+#define MIN_DISTANCE 0
+#define MAX_DISTANCE 300
+
 void hc_sr04_task(void *pvParameters);

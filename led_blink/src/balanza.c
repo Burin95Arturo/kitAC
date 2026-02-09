@@ -126,6 +126,13 @@ void balanza_task(void *pvParameters){
 
         peso_data.peso_raw1 = acu_raw_value / HX711_READ_ITERATIONS;
         
+        if (peso_data.peso_raw1 < PESO_RAW_MIN_KG || peso_data.peso_raw1 > PESO_RAW_MAX_KG) { // El rango válido para un valor de 24 bits con signo es -8388608 a 8388607>) { 
+            peso_data.Is_value_an_error = true; // Marcar como error si el valor está fuera del rango válido
+            peso_data.peso_raw1 = 999; 
+        } else {
+            peso_data.Is_value_an_error = false; // Valor válido
+        }
+
         // Enviar la lectura promediada a la cola
         if (xQueueSend(central_queue, &peso_data, pdMS_TO_TICKS(10)) != pdPASS) {
             // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");

@@ -86,6 +86,9 @@
 #define I2C_MASTER_TIMEOUT_MS       1000
 
 
+#define MAX_ANG_INCLINACION 90.0f // Grados
+#define MIN_ANG_INCLINACION 0.0f // Grados
+
 typedef struct _aceleracion_type {
 
 	int16_t A_X; /*!< Accelerometer value X axis */
