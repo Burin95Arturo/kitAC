@@ -87,7 +87,6 @@
 
 
 #define MAX_ANG_INCLINACION 90.0f // Grados
-#define MIN_ANG_INCLINACION 0.0f // Grados
 
 typedef struct _aceleracion_type {
 

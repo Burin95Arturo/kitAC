@@ -26,6 +26,7 @@
 
 // Umbral mínimo para mostrar peso (filtro de ruido)
 #define PESO_MINIMO_KG  2.0f
+#define PESO_MAX_KG  300.0f 
 
 // Umbral mínimo para indicar posición segura (altura en unidades del sensor)
 #define ALTURA_SEGURA_MIN_CM  40  // Ajustable según cama

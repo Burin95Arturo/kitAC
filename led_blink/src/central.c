@@ -18,8 +18,8 @@ float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
 
     // 4. Filtrado básico de seguridad
     // Si el peso es negativo o muy pequeño (ruido), se devuelve 0
-    if (peso_total < PESO_MINIMO_KG) {
-        return 0.0f;
+    if (peso_total < PESO_MINIMO_KG || peso_total > PESO_MAX_KG) {
+        return 999.0f;
     }
 
     return peso_total;
@@ -364,8 +364,15 @@ void nuevo_central(void *pvParameters) {
                 if (flag_balanza1 && flag_balanza2) {
                     // Calcular peso total
                     received_data.peso_total = calcular_peso(cuentas_raw_b1, cuentas_raw_b2);
-                    printf("Peso calculado CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
-                           received_data.peso_total, cuentas_raw_b1, cuentas_raw_b2);
+                    
+                    if (received_data.peso_total == 999.0f) {
+                        received_data.Is_value_an_error = true;
+                        printf("Error en lectura de balanzas: peso calculado fuera de rango (%.2f kg). Revisar sensores o tarar nuevamente.\n", received_data.peso_total);
+                    } else {
+                        printf("Peso calculado CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
+                               received_data.peso_total, cuentas_raw_b1, cuentas_raw_b2);
+                    }
+                    
                     flag_balanza1 = false;
                     flag_balanza2 = false;
                     flag_peso_calculado = true;

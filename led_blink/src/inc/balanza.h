@@ -31,7 +31,4 @@ static long hx711_read_raw(void);
 // Calcula: (Lectura_con_Peso - ZERO_OFFSET_VALUE) / Peso_Conocido_en_Kg
 #define SCALE_FACTOR_VALUE 26847.8260f // Se uso una pesa de 4.6Kg y una balanza de presicion
 
-#define PESO_RAW_MAX_KG 8388607
-#define PESO_RAW_MIN_KG 0
-
 void balanza_task(void *pvParameters);
