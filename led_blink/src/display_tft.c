@@ -454,13 +454,20 @@ void display_tft_task(void *pvParameters) {
                     {
                         case SENSOR_ACELEROMETRO:
                         //Campo con ángulo
-                        angulo = (u_int8_t)round(received_data.data.inclinacion);
-                        if (angulo < 0) angulo = angulo * -1; //Valor absoluto
-                        if (angulo != angulo_prev) {
-                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);
-                            sprintf(string_angulo, "%d", angulo);
-                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);
-                            angulo_prev = angulo;
+                        if (received_data.data.Is_value_an_error) {
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);                                
+                            sprintf(string_angulo, "xx");
+                            lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)string_angulo, RED);
+                            angulo_prev = 255; //Valor imposible para forzar que se actualice cuando vuelva a haber un valor correcto
+                        } else {
+                            angulo = (u_int8_t)round(received_data.data.inclinacion);
+                            if (angulo < 0) angulo = angulo * -1; //Valor absoluto
+                            if (angulo != angulo_prev) {
+                                lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, WHITE);
+                                sprintf(string_angulo, "%d", angulo);
+                                lcdDrawString(&dev, Cons32fx, 105, 165, (uint8_t *)&string_angulo, AZUL_OCEANO);
+                                angulo_prev = angulo;
+                            }
                         }
                         break;
 
@@ -551,12 +558,12 @@ void display_tft_task(void *pvParameters) {
                         //Peso actual
                         lcdDrawBMP(&dev, "/data/pesa.bmp", 32, 60);
                         lcdDrawString(&dev, Cons32fx, 85, 210, (uint8_t *)"Peso actual:", BLACK);
-                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)"--,- kg", AZUL_OCEANO);
+                        lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)" --,- kg", AZUL_OCEANO);
 
                         //Último peso
                         lcdDrawBMP(&dev, "/data/historial.bmp", 40, 140);
                         lcdDrawString(&dev, ilgh24fx, 160, 200, (uint8_t *)"Ultimo peso:", GRIS);
-                        lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)"--,- kg", GRIS);
+                        lcdDrawString(&dev, ilgh24fx, 185, 188, (uint8_t *)" --,- kg", GRIS);
 
 
 
@@ -588,16 +595,21 @@ void display_tft_task(void *pvParameters) {
                     {
                         case CALCULO_PESO: 
                         //PESO CALCULADO
-                        lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
-                        sprintf(string_peso, "%.2f", received_data.data.peso_total);
-                        lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
-                        
+                        if (received_data.data.Is_value_an_error) {
+                            lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
+                            sprintf(string_peso, "error");
+                            lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, RED);
+                        } else {
+                            lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
+                            sprintf(string_peso, "%.1f", received_data.data.peso_total);
+                            lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, AZUL_OCEANO);    
+                        }
                         break;
 
                         case PESO_MEMORIA:
-                            lcdDrawFillRect(&dev,164,132,185,180, WHITE);
-                            sprintf(string_peso_memoria, "%.2f", received_data.data.peso_total);
-                            lcdDrawString(&dev, ilgh24fx, 185, 180, (uint8_t *)&string_peso_memoria, GRIS);
+                            lcdDrawFillRect(&dev,164,128,185,188, WHITE);
+                            sprintf(string_peso_memoria, "%.1f", received_data.data.peso_total);
+                            lcdDrawString(&dev, ilgh24fx, 185, 188, (uint8_t *)&string_peso_memoria, GRIS);
 
                         break;
                     
@@ -688,10 +700,13 @@ void display_tft_task(void *pvParameters) {
                     {
                         case CALCULO_PESO: 
                         //PESO ACTUAL
+                        //Esta pantalla no está considerando que hay un problema con la balanza
+                        //porque se supone que si no funciona la balanza, no debería poder pesarse
                         if (flag_refresh_display_data) {
-                            lcdDrawFillRect(&dev, 94,116,117,180, WHITE);
-                            sprintf(string_peso, "%.2f", received_data.data.peso_total);
-                            lcdDrawString(&dev, Cons32fx, 118, 180, (uint8_t *)&string_peso, AZUL_OCEANO);
+
+                            lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
+                            sprintf(string_peso, "%.1f", received_data.data.peso_total);
+                            lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, AZUL_OCEANO);
                             flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso
                         }
                         break;
@@ -718,6 +733,8 @@ void display_tft_task(void *pvParameters) {
 
                 if (pantalla_actual != AJUSTE_CERO) {
                     pantalla_actual = AJUSTE_CERO;
+
+                    lcdDrawFillRect(&dev, 44,0,196,319, WHITE);
 
                     //Barra superior con título 
                     lcdDrawFillRect(&dev, 0, 0, 44, 320, CELESTITO);

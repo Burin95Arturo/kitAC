@@ -173,7 +173,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = ALERTA_BARANDALES; //CAMBIAR PARA ALERTA_BARANDALES después del merge
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla ALERTA_BARANDALES.\n");
                 }
             break;
 
@@ -188,7 +188,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = APAGADA;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla APAGADA.\n");
                 }
             break;
 
@@ -200,7 +200,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = ERROR_CABECERA;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla ERROR_CABECERA.\n");
                 }
             break;
 
@@ -222,7 +222,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = BALANZA_RESUMEN;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla BALANZA_RESUMEN.\n");
                 }
             break;
 
@@ -240,7 +240,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = PESANDO;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla PESANDO.\n");
                 }
             break;
 
@@ -252,7 +252,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = ERROR_FRENO;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla ERROR_FRENO.\n");
                 }
             break;
 
@@ -276,7 +276,7 @@ void nuevo_central(void *pvParameters) {
                 display_data.contains_data = false; 
                 display_data.pantalla = AJUSTE_CERO;
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
-                    printf("Error enviando pantalla INICIAL.\n");
+                    printf("Error enviando pantalla AJUSTE_CERO.\n");
                 }
             break;
 
@@ -369,7 +369,7 @@ void nuevo_central(void *pvParameters) {
                         received_data.Is_value_an_error = true;
                         printf("Error en lectura de balanzas: peso calculado fuera de rango (%.2f kg). Revisar sensores o tarar nuevamente.\n", received_data.peso_total);
                     } else {
-                        printf("Peso calculado CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
+                        printf("CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
                                received_data.peso_total, cuentas_raw_b1, cuentas_raw_b2);
                     }
                     
@@ -384,6 +384,7 @@ void nuevo_central(void *pvParameters) {
 
                     if (fabs(received_data.inclinacion) > ANGULO_MAXIMO_PERMITIDO) {
                         // Si el ángulo es mayor al permitido, cambiar al estado de error
+                        //(!) Si el sensor resulta en error (999.0f), el flag se va a cero, falta ver eso
                         cabecera_en_horizontal = false;
                     } else {
                         cabecera_en_horizontal = true;
@@ -496,6 +497,7 @@ void nuevo_central(void *pvParameters) {
                     }
                     // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
                     if (received_data.origen == SENSOR_ACELEROMETRO  || received_data.origen == SENSOR_FRENO || received_data.origen == SENSOR_ALTURA) {
+                        display_data.data.Is_value_an_error = received_data.Is_value_an_error;
                         display_data.contains_data = true;
                         display_data.pantalla = INICIAL;
                         display_data.data.origen = received_data.origen;   
@@ -554,6 +556,7 @@ void nuevo_central(void *pvParameters) {
                             tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
                             printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
                             flag_peso_calculado = false;
+                            //(!) Falta evaluar qué pasa si calculó el peso pero es error (999.0f), no debería tarar en ese caso y mandar un NOTIFY de error
                         }
                         vTaskDelay(pdMS_TO_TICKS(1000));
                         
@@ -641,6 +644,7 @@ void nuevo_central(void *pvParameters) {
                     //Si vengo de PESANDO, muestro el peso calculado
                     if (flag_mostrar_peso) {
                         // Envio el valor del peso a display.
+                        display_data.data.Is_value_an_error = received_data.Is_value_an_error;
                         display_data.data.peso_total = peso_calculado;
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
@@ -649,6 +653,8 @@ void nuevo_central(void *pvParameters) {
                             printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
                         }
                         flag_mostrar_peso= false;
+
+                        //(!) Falta evaluar qué pasa si el peso calculado es error (999.0f), no debería guardarlo en memoria
                         peso_calculado *= 100; // Paso a entero para guardar en NVS (2 decimales)
                         write_peso_nvs = (int32_t)peso_calculado; // Actualizo el último peso medido para mostrarlo si se pide mostrar último peso
                         peso_calculado = 0.0f; // Reiniciar el peso calculado para la próxima vez
@@ -679,6 +685,9 @@ void nuevo_central(void *pvParameters) {
                     if (flag_peso_calculado) {
                         flag_peso_calculado = false;
                         // Envio el valor del peso a display.
+
+                        //(!) Falta evaluar qué pasa si el peso calculado es error (999.0f), no debería mostrar ese valor ni calcular nada
+                        display_data.data.Is_value_an_error = received_data.Is_value_an_error;
                         display_data.data.peso_total = received_data.peso_total;
                         display_data.contains_data = true;
                         display_data.pantalla = PESANDO;

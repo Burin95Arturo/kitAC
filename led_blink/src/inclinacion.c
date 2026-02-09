@@ -66,6 +66,7 @@ void inclinacion_task(void *pvParameters) {
 //		inclinacion_data.inclinacion = 25.0f; // Valor fijo para pruebas
 		inclinacion_data.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
 		
+		//(!) Evaluar que pasa si se rompe la comunicación (el calculo daria nan)
 		if (inclinacion_data.inclinacion > MAX_ANG_INCLINACION) {
 			inclinacion_data.Is_value_an_error = true; // Marca como error si la inclinación es mayor a 90 grados o un angulo negativo (lo que no tendría sentido en este contexto)
 			inclinacion_data.inclinacion = 999.0f; // En caso de error, se envia un valor; elijo 999.
