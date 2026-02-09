@@ -552,7 +552,7 @@ void nuevo_central(void *pvParameters) {
                                 printf("Error enviando datos en pantalla INICIAL.\n");
                         }
 
-                        if (flag_peso_calculado){
+                        if (flag_peso_calculado && received_data.Is_value_an_error == false) { // Actualizo valores de tara solo si el peso calculado no es error
                             tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
                             printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
                             flag_peso_calculado = false;
@@ -682,7 +682,7 @@ void nuevo_central(void *pvParameters) {
                 /************************************** Estado PESANDO ***************************************/
                 if (estado_actual == STATE_PESANDO) {
 
-                    if (flag_peso_calculado) {
+                    if (flag_peso_calculado && received_data.Is_value_an_error == false) { // Solo muestro el peso si no es error
                         flag_peso_calculado = false;
                         // Envio el valor del peso a display.
 
