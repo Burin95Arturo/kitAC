@@ -46,6 +46,7 @@ void nuevo_central(void *pvParameters) {
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
     static bool barandales_arriba = false;
+    static bool flag_falopa = true;
     static uint16_t contador_vueltas = 0;
     static int contador_ciclos_balanza_error = 0;
 
@@ -485,10 +486,12 @@ void nuevo_central(void *pvParameters) {
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
                             estado_actual = STATE_BALANZA_RESUMEN;
+                            flag_falopa = true; // Reinicio la flag para permitir la alerta de barandales la próxima vez que se entre a este estado
                             break;
 
                         } else if (received_data.button_event == EVENT_BUTTON_2){
                             estado_actual = STATE_APAGADO;
+                            flag_falopa = true; // Reinicio la flag para permitir la alerta de barandales la próxima vez que se entre a este estado
                             break;
 
                         } 
@@ -496,10 +499,12 @@ void nuevo_central(void *pvParameters) {
                     // Evaluo barandales para cambiar de estado
                     if (received_data.origen == SENSOR_HALL){
                         if (received_data.hall_on_off == 0){
-                            // Si no se detecta baranda, cambio al estado Alerta Barandales
-                            estado_actual = STATE_ALERTA_BARANDALES;
-                            estado_anterior = STATE_INICIAL;
-                            break;
+                            if(flag_falopa) {
+                                estado_actual = STATE_ALERTA_BARANDALES;
+                                estado_anterior = STATE_INICIAL;
+                                flag_falopa = false;
+                                break;
+                            }
                         }
                     }
                     // Muestro por pantalla los valores recibidos de Inclinación, Freno y Altura
