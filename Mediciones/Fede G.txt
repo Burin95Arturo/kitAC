@@ -1,0 +1,330 @@
+ *  Executing task: C:\Users\fedec\.platformio\penv\Scripts\platformio.exe device monitor 
+
+--- Terminal on COM5 | 115200 8-N-1
+--- Available filters and text transformations: debug, default, direct, esp32_exception_decoder, hexlify, log2file, nocontrol, printable, send_on_enter, time
+--- More details at https://bit.ly/pio-monitor-filters
+--- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+s Jun  8 201 ␂"%=5
+I (42) boot.esp32: SPI Flash Size : 4MB
+I (45) boot: Enabling RNG early entropy source...
+I (50) boot: Partition Table:
+I (52) boot: ## Label            Usage          Type ST Offset   Length
+I (59) boot:  0 nvs              WiFi data        01 02 00009000 00005000
+I (65) boot:  1 phy_init         RF data          01 01 0000e000 00001000
+I (72) boot:  2 factory          factory app      00 00 00010000 00100000
+I (78) boot:  3 spiffs           Unknown data     01 82 00110000 000af000
+I (85) boot: End of partition table
+I (88) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=0ec20h ( 60448) map
+I (116) esp_image: segment 1: paddr=0001ec48 vaddr=3ff80000 size=0001ch (    28) load
+I (117) esp_image: segment 2: paddr=0001ec6c vaddr=3ffb0000 size=013ach (  5036) load
+I (122) esp_image: segment 3: paddr=00020020 vaddr=400d0020 size=2a508h (173320) map
+I (187) esp_image: segment 4: paddr=0004a530 vaddr=3ffb13ac size=011b8h (  4536) load
+I (189) esp_image: segment 5: paddr=0004b6f0 vaddr=40080000 size=106a8h ( 67240) load
+I (225) boot: Loaded app from partition at offset 0x10000
+I (225) boot: Disabling RNG early entropy source...
+I (235) cpu_start: Multicore app
+I (243) cpu_start: Pro cpu start user code
+I (243) cpu_start: cpu freq: 160000000 Hz
+I (244) app_init: Application information:
+I (244) app_init: Project name:     led_blink
+I (248) app_init: App version:      68180b6-dirty
+I (252) app_init: Compile time:     Feb 10 2026 19:52:56
+I (257) app_init: ELF file SHA256:  dec105219...
+I (261) app_init: ESP-IDF:          5.4.1
+I (265) efuse_init: Min chip rev:     v0.0
+I (269) efuse_init: Max chip rev:     v3.99
+I (273) efuse_init: Chip rev:         v1.0
+I (277) heap_init: Initializing. RAM available for dynamic allocation:
+I (283) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (288) heap_init: At 3FFB3450 len 0002CBB0 (178 KiB): DRAM
+I (293) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (299) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (304) heap_init: At 400906A8 len 0000F958 (62 KiB): IRAM
+I (311) spi_flash: detected chip: generic
+I (313) spi_flash: flash io: dio
+W (317) i2c: This driver is an old driver, please migrate your application code to adapt `driver/i2c_master.h`
+I (327) main_task: Started on CPU0
+I (337) main_task: Calling app_main()
+I (357) APP_MAIN: Iniciando app_main()...
+I (357) gpio: GPIO[2]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (357) MSJ: GPIO 2 (LED) configurado como salida.
+I (357) gpio: GPIO[33]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (367) MSJ: GPIO 33 (TRIG) configurado como salida.
+I (377) gpio: GPIO[26]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (387) MSJ: GPIO 26 (HX711_PD_SCK) configurado como salida.
+I (387) gpio: GPIO[25]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
+I (397) MSJ: GPIO 25 (HX711_2_PD_SCK) configurado como salida.
+I (397) gpio: GPIO[14]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (407) MSJ: GPIO 14 (ECHO) configurado como entrada.
+I (417) gpio: GPIO[15]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (427) MSJ: GPIO 15 (HALL) configurado como entrada (PULL-UP habilitado).
+I (427) gpio: GPIO[35]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (437) MSJ: GPIO 35 (HX711_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).
+I (447) gpio: GPIO[34]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (457) MSJ: GPIO 34 (BUTTON_UP_PIN) configurado como entrada.(PULL-UP habilitado)
+I (457) gpio: GPIO[27]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (467) MSJ: GPIO 27 (BUTTON_DOWN_PIN) configurado como entrada.(PULL-UP habilitado)
+I (477) gpio: GPIO[12]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (487) MSJ: GPIO 12 (BUTTON_SELECT_PIN) configurado como entrada.(PULL-UP habilitado)
+I (497) gpio: GPIO[36]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (497) MSJ: GPIO 36 (BUTTON_4) configurado como entrada.(PULL-UP habilitado)
+I (507) gpio: GPIO[39]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0
+I (517) MSJ: GPIO 39 (HX711_2_DOUT) configurado como entrada (¡SIN PULL-UP/DOWN!).
+I (527) gpio: GPIO[35]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (527) gpio: GPIO[26]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+Tarea de lectura de botones iniciada.
+I (537) gpio: GPIO[39]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+HX711: Pines DOUT (GPIO35) y PD_SCK (GPIO26) inicializados.
+Abriendo NVS para leer
+I (537) TFT: Disabling Touch Contoller
+I (537) APP_MAIN: app_main() ha finalizado. Las tareas de FreeRTOS estan ahora ejecutandose.
+Tarea de lectura del freno iniciada.
+I (547) gpio: GPIO[25]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+Abriendo NVS para leer
+Peso leído de NVS: 156
+I (567) main_task: Returned from app_main()
+I (587) HX711_DRIVER_2: HX711: Pines DOUT (GPIO39) y PD_SCK (GPIO25) inicializados.
+Tara B1: 151415
+Abriendo NVS para leer
+Tarea balanza 1 iniciada.
+Tara B2: 702455
+Tarea balanza 2 iniciada.
+I (1567) ILI9340: SPI clock speed=10 MHz
+I (1567) ILI9340: TFT_MOSI=23
+I (1567) ILI9340: TFT_SCLK=18
+I (1567) ILI9340: TFT_CS=5
+I (1567) gpio: GPIO[5]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (1567) ILI9340: GPIO_DC=16
+I (1577) gpio: GPIO[16]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (1577) ILI9340: GPIO_RESET=4
+I (1587) gpio: GPIO[4]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0 
+I (1697) ILI9340: GPIO_BL=17
+I (1697) gpio: GPIO[17]| InputEn: 0| OutputEn: 0| OpenDrain: 0| Pullup: 1| Pulldown: 0| Intr:0
+I (1697) ILI9340: spi_bus_initialize(TFT) ret=0 TFT_ID=2
+I (1697) ILI9340: Your TFT is ILI9341
+I (1697) ILI9340: Screen width:240
+I (1707) ILI9340: Screen height:320
+I (2017) SPIFFS: SPIFFS montado correctamente
+Error enviando datos en pantalla INICIAL.
+Error enviando pantalla INICIAL.
+Error enviando datos en pantalla INICIAL.
+Error enviando datos en pantalla INICIAL.
+W (8287) CENTRAL: Descartando dato viejo del sensor 7 (Batch 21 vs Actual 22)
+W (8287) CENTRAL: Descartando dato viejo del sensor 5 (Batch 21 vs Actual 22)
+Abriendo NVS para leer
+Peso leído de NVS: 156
+W (8427) CENTRAL: Descartando dato viejo del sensor 5 (Batch 22 vs Actual 23)
+W (8437) CENTRAL: Descartando dato viejo del sensor 7 (Batch 22 vs Actual 23)
+W (8587) CENTRAL: Descartando dato viejo del sensor 0 (Batch 21 vs Actual 23)
+W (8937) HX711_DRIVER_2: HX711: Timeout esperando que DOUT se ponga en LOW.
+W (9147) HX711_DRIVER_2: HX711: Timeout esperando que DOUT se ponga en LOW.
+Raw 1=632334
+Raw 2=1722707
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 57.09 kg (Cuentas B1: 632334, Cuentas B2: 1722707)
+Peso calculado promediado RAW: 57.09
+Raw 1=634715
+Raw 2=2157065
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.91 kg (Cuentas B1: 634715, Cuentas B2: 2157065)
+Peso calculado promediado RAW: 130.00
+Raw 2=2160462
+Raw 1=634214
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 73.01 kg (Cuentas B1: 634214, Cuentas B2: 2160462)
+Peso calculado promediado RAW: 203.01
+Raw 2=2157167
+Raw 1=633360
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.86 kg (Cuentas B1: 633360, Cuentas B2: 2157167)
+Peso calculado promediado RAW: 275.87
+Raw 2=2154563
+Raw 1=630214
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.63 kg (Cuentas B1: 630214, Cuentas B2: 2154563)
+Peso calculado promediado RAW: 348.51
+Raw 2=2154208
+Raw 1=632842
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.73 kg (Cuentas B1: 632842, Cuentas B2: 2154208)
+Peso calculado promediado RAW: 421.24
+Raw 2=2152959
+Raw 1=632520
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.67 kg (Cuentas B1: 632520, Cuentas B2: 2152959)
+Peso calculado promediado RAW: 493.91
+Raw 2=2153082
+Raw 1=631239
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.62 kg (Cuentas B1: 631239, Cuentas B2: 2153082)
+Peso calculado promediado RAW: 566.53
+Raw 2=2152531
+Raw 1=630989
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.59 kg (Cuentas B1: 630989, Cuentas B2: 2152531)
+Peso calculado promediado RAW: 639.12
+Raw 2=2154238
+Raw 1=630689
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.64 kg (Cuentas B1: 630689, Cuentas B2: 2154238)
+Peso calculado promediado RAW: 711.76
+Peso calculado promediado: 71.18
+W (34727) CENTRAL: Descartando dato viejo del sensor 5 (Batch 86 vs Actual 87)
+W (34777) CENTRAL: Descartando dato viejo del sensor 7 (Batch 86 vs Actual 87)
+Raw 2=2141020
+Raw 1=637228
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.44 kg (Cuentas B1: 637228, Cuentas B2: 2141020)
+Peso calculado promediado RAW: 72.44
+Raw 2=2141139
+Raw 1=637947
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.47 kg (Cuentas B1: 637947, Cuentas B2: 2141139)
+Peso calculado promediado RAW: 144.91
+Raw 2=2139525
+Raw 1=637269
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.38 kg (Cuentas B1: 637269, Cuentas B2: 2139525)
+Peso calculado promediado RAW: 217.29
+Raw 2=2141773
+Raw 1=638096
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.50 kg (Cuentas B1: 638096, Cuentas B2: 2141773)
+Peso calculado promediado RAW: 289.79
+Raw 2=2142888
+Raw 1=639560
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.60 kg (Cuentas B1: 639560, Cuentas B2: 2142888)
+Peso calculado promediado RAW: 362.39
+Raw 2=2140149
+Raw 1=638245
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.45 kg (Cuentas B1: 638245, Cuentas B2: 2140149)
+Peso calculado promediado RAW: 434.84
+Raw 2=2140904
+Raw 1=637762
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.45 kg (Cuentas B1: 637762, Cuentas B2: 2140904)
+Peso calculado promediado RAW: 507.30
+Raw 2=2141532
+Raw 1=639145
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.54 kg (Cuentas B1: 639145, Cuentas B2: 2141532)
+Peso calculado promediado RAW: 579.83
+Raw 2=2140216
+Raw 1=637606
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.42 kg (Cuentas B1: 637606, Cuentas B2: 2140216)
+Peso calculado promediado RAW: 652.26
+Raw 2=2142374
+Raw 1=638595
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 72.54 kg (Cuentas B1: 638595, Cuentas B2: 2142374)
+Peso calculado promediado RAW: 724.80
+Peso calculado promediado: 72.48
+W (79477) CENTRAL: Descartando dato viejo del sensor 5 (Batch 224 vs Actual 225)
+W (79527) CENTRAL: Descartando dato viejo del sensor 7 (Batch 224 vs Actual 225)
+Raw 2=1686906
+Raw 1=928967
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.22 kg (Cuentas B1: 928967, Cuentas B2: 1686906)
+Peso calculado promediado RAW: 68.22
+Raw 2=1687603
+Raw 1=930572
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.31 kg (Cuentas B1: 930572, Cuentas B2: 1687603)
+Peso calculado promediado RAW: 136.53
+Raw 2=1686967
+Raw 1=929406
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.24 kg (Cuentas B1: 929406, Cuentas B2: 1686967)
+Peso calculado promediado RAW: 204.76
+Raw 2=1690337
+Raw 1=926223
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.23 kg (Cuentas B1: 926223, Cuentas B2: 1690337)
+Peso calculado promediado RAW: 272.99
+Raw 2=1690558
+Raw 1=926206
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.23 kg (Cuentas B1: 926206, Cuentas B2: 1690558)
+Peso calculado promediado RAW: 341.22
+Raw 2=1688766
+Raw 1=929455
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.30 kg (Cuentas B1: 929455, Cuentas B2: 1688766)
+Peso calculado promediado RAW: 409.53
+Raw 2=1686076
+Raw 1=930722
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.26 kg (Cuentas B1: 930722, Cuentas B2: 1686076)
+Peso calculado promediado RAW: 477.79
+Raw 2=1679265
+Raw 1=930803
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 68.02 kg (Cuentas B1: 930803, Cuentas B2: 1679265)
+Peso calculado promediado RAW: 545.81
+Raw 2=1676745
+Raw 1=930964
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 67.93 kg (Cuentas B1: 930964, Cuentas B2: 1676745)
+Peso calculado promediado RAW: 613.74
+Raw 2=1677680
+Raw 1=929338
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 67.90 kg (Cuentas B1: 929338, Cuentas B2: 1677680)
+Peso calculado promediado RAW: 681.64
+Peso calculado promediado: 68.16
+W (118497) CENTRAL: Descartando dato viejo del sensor 5 (Batch 339 vs Actual 340)
+W (118547) CENTRAL: Descartando dato viejo del sensor 7 (Batch 339 vs Actual 340)
+Raw 2=1969921
+Raw 1=721512
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.77 kg (Cuentas B1: 721512, Cuentas B2: 1969921)
+Peso calculado promediado RAW: 69.77
+Raw 2=1970928
+Raw 1=724570
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.94 kg (Cuentas B1: 724570, Cuentas B2: 1970928)
+Peso calculado promediado RAW: 139.71
+Raw 2=1969515
+Raw 1=724731
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.89 kg (Cuentas B1: 724731, Cuentas B2: 1969515)
+Peso calculado promediado RAW: 209.60
+Raw 2=1970012
+Raw 1=722264
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.81 kg (Cuentas B1: 722264, Cuentas B2: 1970012)
+Peso calculado promediado RAW: 279.41
+Raw 2=1970457
+Raw 1=725503
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.96 kg (Cuentas B1: 725503, Cuentas B2: 1970457)
+Peso calculado promediado RAW: 349.37
+Raw 2=1968751
+Raw 1=724117
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.84 kg (Cuentas B1: 724117, Cuentas B2: 1968751)
+Peso calculado promediado RAW: 419.21
+Raw 2=1969935
+Raw 1=723003
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.84 kg (Cuentas B1: 723003, Cuentas B2: 1969935)
+Peso calculado promediado RAW: 489.05
+Raw 2=1970078
+Raw 1=725813
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.96 kg (Cuentas B1: 725813, Cuentas B2: 1970078)
+Peso calculado promediado RAW: 559.00
+Raw 2=1968894
+Raw 1=723642
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.82 kg (Cuentas B1: 723642, Cuentas B2: 1968894)
+Peso calculado promediado RAW: 628.83
+Raw 2=1970395
+Raw 1=724217
+Tara usada para calculo: B1=151415, B2=702455
+CALCULO DE PESO: 69.90 kg (Cuentas B1: 724217, Cuentas B2: 1970395)
+Peso calculado promediado RAW: 698.73
+Peso calculado promediado: 69.87

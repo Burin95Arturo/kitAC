@@ -102,6 +102,7 @@ void balanza_2_task(void *pvParameters){
     // Intentamos leer de la NVS, si falla (porque es la primera vez), quedan en 0
     if (read_nvs_int("tara_b2", &tara_b2) != ESP_OK) tara_b2 = 0;
 
+    printf("Tara B2: %ld\n", tara_b2);
     long acu_raw_value = 0; 
     central_data_t peso_data_2;
     uint32_t received_request_id; 
@@ -114,6 +115,8 @@ void balanza_2_task(void *pvParameters){
 		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
 
         peso_data_2.request_id = received_request_id; // <--- Clave: Devolver el mismo request_id recibido
+        peso_data_2.Is_value_an_error = false; // Reiniciar el flag de error para esta lectura
+
      
         for (int i = 0; i < HX711_READ_ITERATIONS; i++) {
 
@@ -128,8 +131,6 @@ void balanza_2_task(void *pvParameters){
         if (xQueueSend(central_queue, &peso_data_2, (TickType_t)0) != pdPASS) {
             // ESP_LOGE(TAG_2, "No se pudo enviar el peso a la cola.");
             printf("No se pudo enviar balanza 2 a la cola.\n");
-        }else {
-            printf("Raw 2=%ld\n", peso_data_2.peso_raw1);
         }
 
         // Resetear acumulador para la siguiente lectura

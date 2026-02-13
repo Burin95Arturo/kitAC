@@ -52,7 +52,7 @@ void inclinacion_task(void *pvParameters) {
 		/* Esperar notificación de Central */
 		// Espera indefinidamente (portMAX_DELAY) hasta recibir una notificación
 		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
-		printf("Inclinacion - request_id recibido: %ld\n", received_request_id);
+		//printf("Inclinacion - request_id recibido: %ld\n", received_request_id);
 		//printf("Leyendo aceleraciones...\n");
 		MPU_ReadAcceleration(&aceleraciones);
 
@@ -78,9 +78,7 @@ void inclinacion_task(void *pvParameters) {
 		if (xQueueSend(central_queue, &inclinacion_data, pdMS_TO_TICKS(10)) != pdPASS) {
 			printf( "No se pudo enviar inclinacion a la cola.");
 		}
-		else {
-			printf("request_id enviado: %ld\n", inclinacion_data.request_id);
-		}
+		
 
 		vTaskDelay(pdMS_TO_TICKS(250));
 

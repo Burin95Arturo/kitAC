@@ -11,5 +11,6 @@
 #include "math.h"
 
 #define MUESTRAS_PROMEDIO 10
+#define CICLOS_TARA 5  
 
 void nuevo_central(void *pvParameters);

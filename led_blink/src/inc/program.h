@@ -21,12 +21,13 @@
 
 // Factores de división (Cuentas por Kg)
 // K1 es menor porque las "patitas" absorben peso, generando menos cuentas por Kg real.
-#define COEF_K1         23870.0f 
-#define COEF_K2         27620.0f
+#define COEF_K1         17200.0f //23870.0f 
+#define COEF_K2         24910.0f //27620.0f
 
 // Umbral mínimo para mostrar peso (filtro de ruido)
 #define PESO_MINIMO_KG  2.0f
 #define PESO_MAX_KG  300.0f 
+#define MAX_CICLOS_BALANZA_ERROR 10
 
 // Umbral mínimo para indicar posición segura (altura en unidades del sensor)
 #define ALTURA_SEGURA_MIN_CM  40  // Ajustable según cama

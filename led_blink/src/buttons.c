@@ -20,7 +20,7 @@ void button_task(void *pvParameters) {
 
         // Leer el estado de los botones
         if (gpio_get_level(BUTTON_1) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(5));
+            vTaskDelay(pdMS_TO_TICKS(10));
             if (gpio_get_level(BUTTON_1) == 0) {
                 event = EVENT_BUTTON_1;
                 button_pressed = true;
@@ -61,7 +61,7 @@ void button_task(void *pvParameters) {
         // ESP_LOGD(TAG_BTN, "Evento de boton enviado a la cola.");
         //printf("Evento de boton enviado a la cola.\n");
         // Retardo para "debounce" del boton, no enviar multiples eventos
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(40));
         
         button_pressed = false;
         

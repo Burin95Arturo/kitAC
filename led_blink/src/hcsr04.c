@@ -56,7 +56,7 @@ void hc_sr04_task(void *pvParameters) {
 		xTaskNotifyWait(0, 0, &received_request_id, portMAX_DELAY);
         
         distance = getDistance();
-        printf("Distancia: %ld cm\n", distance);
+        //printf("Distancia: %ld cm\n", distance);
 
         if (distance < 20) {
             gpio_set_level(INTERNAL_LED_PIN, 1);

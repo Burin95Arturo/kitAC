@@ -1,0 +1,40 @@
+
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 611723, Cuentas B2: 1897745)
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 612097, Cuentas B2: 1897138)
+CALCULO DE PESO: 59.60 kg (Cuentas B1: 613132, Cuentas B2: 1516623)
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 612303, Cuentas B2: 1896354)
+CALCULO DE PESO: 74.70 kg (Cuentas B1: 612179, Cuentas B2: 1895944)
+CALCULO DE PESO: 74.70 kg (Cuentas B1: 612211, Cuentas B2: 1895467)
+CALCULO DE PESO: 74.70 kg (Cuentas B1: 612403, Cuentas B2: 1895765)
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 614587, Cuentas B2: 1894403)
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 616394, Cuentas B2: 1892670)
+CALCULO DE PESO: 74.80 kg (Cuentas B1: 615640, Cuentas B2: 1892484)
+
+
+
+
+CALCULO DE PESO: 89.90 kg (Cuentas B1: 636558, Cuentas B2: 2237715)
+CALCULO DE PESO: 89.70 kg (Cuentas B1: 634415, Cuentas B2: 2237807)
+CALCULO DE PESO: 89.90 kg (Cuentas B1: 633473, Cuentas B2: 2242972)
+CALCULO DE PESO: 90.00 kg (Cuentas B1: 635540, Cuentas B2: 2242162)
+CALCULO DE PESO: 89.90 kg (Cuentas B1: 635667, Cuentas B2: 2240152)
+CALCULO DE PESO: 89.90 kg (Cuentas B1: 635445, Cuentas B2: 2239443)
+CALCULO DE PESO: 89.80 kg (Cuentas B1: 633985, Cuentas B2: 2239813)
+CALCULO DE PESO: 90.00 kg (Cuentas B1: 634922, Cuentas B2: 2243972)
+CALCULO DE PESO: 90.10 kg (Cuentas B1: 636948, Cuentas B2: 2242001)
+CALCULO DE PESO: 90.00 kg (Cuentas B1: 636653, Cuentas B2: 2240804)
+
+Tara:
+
+(Cuentas B1: 129333, Cuentas B2: 702009)
+(Cuentas B1: 143445, Cuentas B2: 703109)
+(Cuentas B1: 143304, Cuentas B2: 702055)
+(Cuentas B1: 143474, Cuentas B2: 702020)
+(Cuentas B1: 143574, Cuentas B2: 702002)
+(Cuentas B1: 143616, Cuentas B2: 702220)
+(Cuentas B1: 143714, Cuentas B2: 702067)
+(Cuentas B1: 143495, Cuentas B2: 702181)
+(Cuentas B1: 143623, Cuentas B2: 702209)
+(Cuentas B1: 143730, Cuentas B2: 701900)
+
+Tara usada para calculo: B1=148658, B2=705728

@@ -8,6 +8,7 @@ float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
     long neto_b1 = cuentas_raw_b1 - tara_b1;
     long neto_b2 = cuentas_raw_b2 - tara_b2;
 
+    printf("Tara usada para calculo: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
     // 2. Calcular el peso parcial aportado por cada sector
     // Se usan coeficientes independientes porque la eficiencia mecánica es distinta
     float peso_parcial_1 = (float)neto_b1 / COEF_K1;
@@ -16,13 +17,9 @@ float calcular_peso(long cuentas_raw_b1, long cuentas_raw_b2) {
     // 3. Sumar para obtener el peso total
     float peso_total = peso_parcial_1 + peso_parcial_2;
 
-    // 4. Filtrado básico de seguridad
-    // Si el peso es negativo o muy pequeño (ruido), se devuelve 0
-    if (peso_total < PESO_MINIMO_KG || peso_total > PESO_MAX_KG) {
-        return 999.0f;
-    }
-
-    return peso_total;
+    // 4. Redondear a 1 decimal
+    float redondeado = roundf(peso_total * 10.0f) / 10.0f;
+    return redondeado;
 }
 
 void tara_balanzas(long raw_b1, long raw_b2) {
@@ -45,12 +42,12 @@ void nuevo_central(void *pvParameters) {
     static bool flag_peso_calculado = false;
     static bool flag_mostrar_peso = false;
     static bool flag_mostrar_ultimo_peso = true;
-    static bool flag_tara_solicitada = false;
     static float peso_calculado = 0.0f;
     static bool cabecera_en_horizontal = false;
     static bool freno_activado = false;
     static bool barandales_arriba = false;
     static uint16_t contador_vueltas = 0;
+    static int contador_ciclos_balanza_error = 0;
 
     central_data_t received_data;
     received_data.Is_value_an_error = false; //Inicialmente, no hay error
@@ -67,6 +64,7 @@ void nuevo_central(void *pvParameters) {
     static long cuentas_raw_b2 = 0;
 
     static uint16_t contador_estado_pesando = 0;
+    static uint16_t contador_estado_tara = 0;
 
     static esp_err_t nvs_status;
     static esp_err_t nvs_status_write;
@@ -87,9 +85,9 @@ void nuevo_central(void *pvParameters) {
         
         // Incrementamos el ID cada vez que pedimos nuevos datos.
         // Esto invalida automáticamente cualquier dato viejo en la cola.
-        printf("----- Nuevo ciclo de central -----\n");
+        //printf("----- Nuevo ciclo de central -----\n");
         current_request_id++; 
-        printf("current_request_id: %ld\n", current_request_id);
+        //printf("current_request_id: %ld\n", current_request_id);
 
         switch (estado_actual) {
             case STATE_BIENVENIDA:
@@ -153,7 +151,7 @@ void nuevo_central(void *pvParameters) {
                 xTaskNotify(altura_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                printf("Enviado notify con request_id: %ld\n", current_request_id);
+                //printf("Enviado notify con request_id: %ld\n", current_request_id);
 
                 expected_responses = 5;
 
@@ -224,6 +222,10 @@ void nuevo_central(void *pvParameters) {
                 if (xQueueSend(display_queue, &display_data, (TickType_t)0) != pdPASS) {
                     printf("Error enviando pantalla BALANZA_RESUMEN.\n");
                 }
+                if (estado_anterior != STATE_BALANZA_RESUMEN) {
+                    // Si acabo de entrar a este estado, aviso que hay que actualizar el peso de memoria
+                    flag_mostrar_ultimo_peso = true;
+                }
             break;
 
             case STATE_PESANDO:
@@ -267,11 +269,11 @@ void nuevo_central(void *pvParameters) {
 
                 // SEGUN "NUEVO ESQUEMA DE ESTADOS", BALANZA RESUMEN ES LA QUE CHEQUEA QUE ESTE TODO OK. AJUSTE CERO MIDE DIRECTO
                 // xTaskNotify(inclinacion_task_handle, current_request_id, eSetValueWithOverwrite);
-                xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
+                //xTaskNotify(teclado_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(balanza_task_handle, current_request_id, eSetValueWithOverwrite);
                 xTaskNotify(balanza_2_task_handle, current_request_id, eSetValueWithOverwrite);
 
-                expected_responses = 3;
+                expected_responses = 2;
                 
                 display_data.contains_data = false; 
                 display_data.pantalla = AJUSTE_CERO;
@@ -294,6 +296,7 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
 
             estado_actual = estado_anterior;
+            estado_anterior = STATE_ALERTA_BARANDALES;
 
             //xSemaphoreGive(buzzer_semaphore);
         }
@@ -308,6 +311,8 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
             estado_actual = estado_anterior;
+            estado_anterior = STATE_ERROR_CABECERA;
+
 
 //            xSemaphoreGive(buzzer_semaphore);
             // ACA SE TIENE QUE PRENDER UN LED ROJO Y EL BUZZER --> a chequear
@@ -318,6 +323,7 @@ void nuevo_central(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(3000)); // Esperar 3 seg
             
             estado_actual = estado_anterior;
+            estado_anterior = STATE_ERROR_FRENO;
 
             xSemaphoreGive(buzzer_semaphore);
 
@@ -333,7 +339,7 @@ void nuevo_central(void *pvParameters) {
         // Esperamos datos en cola.
         // Implementamos un timeout para no bloquearnos por siempre.
         uint8_t received_count = 0;
-        printf("Antes del while %ld\n", current_request_id);
+        //printf("Antes del while %ld\n", current_request_id);
         while (received_count < expected_responses) {
             if (xQueueReceive(central_queue, &received_data, pdMS_TO_TICKS(1000)) == pdTRUE) {
                 
@@ -345,8 +351,8 @@ void nuevo_central(void *pvParameters) {
                     continue; // Ignoramos este mensaje y volvemos a leer la cola
                     // (este continue ignora lo que viene abajo y avanza con el while)
                 }
-                printf("Dato válido del sensor %d (req_id recibido %ld)\n", 
-                       received_data.origen, received_data.request_id);
+                //printf("Dato válido del sensor %d (req_id recibido %ld)\n", 
+                       //received_data.origen, received_data.request_id);
                 // Si llegamos aquí, el dato es FRESCO y válido para este estado
                 received_count++;
 
@@ -366,7 +372,7 @@ void nuevo_central(void *pvParameters) {
                     received_data.peso_total = calcular_peso(cuentas_raw_b1, cuentas_raw_b2);
                     
                     if (received_data.peso_total == 999.0f) {
-                        received_data.Is_value_an_error = true;
+                        //received_data.Is_value_an_error = true;
                         printf("Error en lectura de balanzas: peso calculado fuera de rango (%.2f kg). Revisar sensores o tarar nuevamente.\n", received_data.peso_total);
                     } else {
                         printf("CALCULO DE PESO: %.2f kg (Cuentas B1: %ld, Cuentas B2: %ld)\n", 
@@ -474,6 +480,7 @@ void nuevo_central(void *pvParameters) {
                 
                 /************************************** Estado INICIAL *****************************************/
                 if (estado_actual == STATE_INICIAL) {
+                    estado_anterior = STATE_INICIAL;
                     // Evaluo el teclado para cambiar de estado
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
@@ -539,40 +546,57 @@ void nuevo_central(void *pvParameters) {
 
                 /************************************** Estado AJUSTE_CERO ****************************************/
                 if (estado_actual == STATE_AJUSTE_CERO) {
-                    if (received_data.origen == BUTTON_EVENT) {
-                        if (received_data.button_event == EVENT_BUTTON_1){
-                            // Voy para atras 
-                            estado_actual = STATE_BALANZA_RESUMEN;
-                            break;
-                        }
-                    } else if (flag_tara_solicitada) {
-                        display_data.contains_data = false;
-                        display_data.pantalla = AJUSTE_CERO;
-                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla INICIAL.\n");
-                        }
-
-                        if (flag_peso_calculado && received_data.Is_value_an_error == false) { // Actualizo valores de tara solo si el peso calculado no es error
-                            tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
-                            printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
-                            flag_peso_calculado = false;
-                            //(!) Falta evaluar qué pasa si calculó el peso pero es error (999.0f), no debería tarar en ese caso y mandar un NOTIFY de error
-                        }
-                        vTaskDelay(pdMS_TO_TICKS(1000));
+                    estado_anterior = STATE_AJUSTE_CERO;
+         
+                    if (flag_peso_calculado) {
+                        // Si ya tengo un peso calculado, significa que tengo el valor de ambos raw
+                        flag_peso_calculado = false; // Reinicio la flag para no entrar a este bloque más de una vez por ciclo
                         
+                        contador_estado_tara++;
+                        //Esto por ahora solo hace una demora. Se puede usar para hacer promedios de raw
+                    }
+                    if (contador_estado_tara >= CICLOS_TARA) { 
+                        // Si ya pasaron x ciclos, hago la tara y muestro "ok"
+                        contador_estado_tara = 0;
+
+                        tara_balanzas(cuentas_raw_b1, cuentas_raw_b2);
+                        printf("Tara actualizada: B1=%ld, B2=%ld\n", tara_b1, tara_b2);
+
+                        //Muestro OK por pantalla
                         display_data.contains_data = true;
                         display_data.pantalla = AJUSTE_CERO;
                         display_data.data.origen = NOTIFY_TARA_COMPLETADA;
                         if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                                printf("Error enviando datos en pantalla INICIAL.\n");
+                                printf("Error enviando datos en pantalla AJUSTE_CERO.\n");
                         }
-                        flag_tara_solicitada = false; // Reinicio la flag para la próxima vez
-                        vTaskDelay(pdMS_TO_TICKS(1000)); // Pequeño delay para asegurar que el display procese la actualización de pantalla antes de enviar los datos
+                        vTaskDelay(pdMS_TO_TICKS(3000));
+                        estado_actual = STATE_BALANZA_RESUMEN;
+                        break;
+
                     }
+        
                 }
 
                 /************************************** Estado BALANZA_RESUMEN ***********************************/
                 if (estado_actual == STATE_BALANZA_RESUMEN) {
+                    estado_anterior = STATE_BALANZA_RESUMEN; 
+                    if (flag_mostrar_ultimo_peso) {
+                        flag_mostrar_ultimo_peso = false;
+                        nvs_status = read_nvs_int("PESO", &read_peso_nvs);
+                        if (nvs_status != ESP_OK) {
+                            read_peso_nvs = 0;
+                            printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
+                        } else {
+                            printf("Peso leído de NVS: %ld\n", read_peso_nvs);
+                        }
+                        display_data.data.peso_total = read_peso_nvs/100.0f; // Paso a float con 2 decimales
+                        display_data.contains_data = true;
+                        display_data.pantalla = BALANZA_RESUMEN;
+                        display_data.data.origen = PESO_MEMORIA;
+                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                            printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
+                        }   
+                    }
                     // Evaluo los botones
                     if (received_data.origen == BUTTON_EVENT) {
                         if (received_data.button_event == EVENT_BUTTON_1){
@@ -601,7 +625,6 @@ void nuevo_central(void *pvParameters) {
                             // Guardo el dato en memoria
                             // Pantalla de "guardando dato en memoria"?
                             // Guardo el último peso medido desde NVS y actualizo la pantalla de BALANZA_RESUMEN con ese valor
-                            flag_mostrar_ultimo_peso = true;
                             
                             nvs_status_write = write_nvs_int("PESO", write_peso_nvs);
                             if (nvs_status_write != ESP_OK) {
@@ -611,13 +634,20 @@ void nuevo_central(void *pvParameters) {
                                 printf("Peso escrito de NVS: %ld\n", write_peso_nvs);
                             }    
                             
+                            display_data.data.peso_total = write_peso_nvs/100.0f; // Paso a float con 2 decimales                     
+                            display_data.contains_data = true;
+                            display_data.pantalla = BALANZA_RESUMEN;
+                            display_data.data.origen = PESO_MEMORIA;
+                            if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                                printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
+                            }   
+
                             break; 
                         }
                         else if (received_data.button_event == EVENT_BUTTON_3){
                             if (cabecera_en_horizontal && freno_activado && barandales_arriba){
                                 // Voy a ajustar el cero
                                 estado_actual = STATE_AJUSTE_CERO;
-                                flag_tara_solicitada = true;
                                 break; 
                             } else if (!cabecera_en_horizontal){ 
                                 estado_actual = STATE_ERROR_CABECERA;
@@ -644,7 +674,7 @@ void nuevo_central(void *pvParameters) {
                     //Si vengo de PESANDO, muestro el peso calculado
                     if (flag_mostrar_peso) {
                         // Envio el valor del peso a display.
-                        display_data.data.Is_value_an_error = received_data.Is_value_an_error;
+                        //display_data.data.Is_value_an_error = received_data.Is_value_an_error;
                         display_data.data.peso_total = peso_calculado;
                         display_data.contains_data = true;
                         display_data.pantalla = BALANZA_RESUMEN;
@@ -658,36 +688,20 @@ void nuevo_central(void *pvParameters) {
                         peso_calculado *= 100; // Paso a entero para guardar en NVS (2 decimales)
                         write_peso_nvs = (int32_t)peso_calculado; // Actualizo el último peso medido para mostrarlo si se pide mostrar último peso
                         peso_calculado = 0.0f; // Reiniciar el peso calculado para la próxima vez
-                    } else if (flag_mostrar_ultimo_peso) {
-                        flag_mostrar_ultimo_peso = false;
-                        nvs_status = read_nvs_int("PESO", &read_peso_nvs);
-                        if (nvs_status != ESP_OK) {
-                            read_peso_nvs = 0;
-                            printf("nvs_status: %x. No se pudo leer el último peso medido de NVS. Inicializando en 0.\n", nvs_status);        
-                        } else {
-                            printf("Peso leído de NVS: %ld\n", read_peso_nvs);
-                        }
-                        display_data.data.peso_total = read_peso_nvs/100.0f; // Paso a float con 2 decimales
-                        display_data.contains_data = true;
-                        display_data.pantalla = BALANZA_RESUMEN;
-                        display_data.data.origen = PESO_MEMORIA;
-                        if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
-                            printf("Error enviando datos en pantalla BALANZA_RESUMEN.\n");
-                        }   
-                    }
+                    } 
 
                     
                 } //FIN ESTADO BALANZA_RESUMEN
 
                 /************************************** Estado PESANDO ***************************************/
                 if (estado_actual == STATE_PESANDO) {
-
-                    if (flag_peso_calculado && received_data.Is_value_an_error == false) { // Solo muestro el peso si no es error
+                    estado_anterior = STATE_PESANDO;
+                    if (flag_peso_calculado) { // Solo muestro el peso si no es error
                         flag_peso_calculado = false;
                         // Envio el valor del peso a display.
 
                         //(!) Falta evaluar qué pasa si el peso calculado es error (999.0f), no debería mostrar ese valor ni calcular nada
-                        display_data.data.Is_value_an_error = received_data.Is_value_an_error;
+                        //display_data.data.Is_value_an_error = received_data.Is_value_an_error;
                         display_data.data.peso_total = received_data.peso_total;
                         display_data.contains_data = true;
                         display_data.pantalla = PESANDO;
@@ -699,6 +713,28 @@ void nuevo_central(void *pvParameters) {
                         contador_estado_pesando++;
                         peso_calculado += received_data.peso_total;
                         printf("Peso calculado promediado RAW: %.2f\n", peso_calculado);
+                    } else if (flag_peso_calculado && received_data.Is_value_an_error == true) {
+                        // Si el peso calculado es error, muestro la pantalla de error pero no hago el promedio ni guardo el peso en memoria
+                        flag_peso_calculado = false;
+
+                        // display_data.data.Is_value_an_error = received_data.Is_value_an_error;
+                        // display_data.contains_data = true;
+                        // display_data.pantalla = PESANDO;
+                        // display_data.data.origen = CALCULO_PESO;
+                        // if (xQueueSend(display_queue, &display_data, 10 / portTICK_PERIOD_MS) != pdPASS) {
+                        //     printf("Error enviando datos en pantalla PESANDO.\n");
+                        // }
+
+                        contador_ciclos_balanza_error++;
+                        printf("Ciclo con error en balanza. Contador: %d\n", contador_ciclos_balanza_error);
+                        
+                        // Si hay muchos errores consecutivos, vuelvo a BALANZA_RESUMEN para evitar quedarse pegado en PESANDO
+                        if (contador_ciclos_balanza_error >= MAX_CICLOS_BALANZA_ERROR) {
+                            printf("Demasiados errores consecutivos en balanza. Volviendo a BALANZA_RESUMEN.\n");
+                            contador_ciclos_balanza_error = 0; // Reiniciar el contador
+                            estado_actual = STATE_BALANZA_RESUMEN;
+                            break;
+                        }
                     }
                                       
                     if (contador_estado_pesando >= MUESTRAS_PROMEDIO) {
@@ -736,7 +772,7 @@ void nuevo_central(void *pvParameters) {
 
 
         /*********** Demora general para el bucle completo ********************/
-        vTaskDelay(pdMS_TO_TICKS(500)); 
+        vTaskDelay(pdMS_TO_TICKS(100)); 
 
     } // Fin del while(1)
 

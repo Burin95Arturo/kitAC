@@ -595,15 +595,15 @@ void display_tft_task(void *pvParameters) {
                     {
                         case CALCULO_PESO: 
                         //PESO CALCULADO
-                        if (received_data.data.Is_value_an_error) {
-                            lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
-                            sprintf(string_peso, "error");
-                            lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, RED);
-                        } else {
+                        //if (received_data.data.Is_value_an_error) {
+                        //    lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
+                        //    sprintf(string_peso, "error");
+                        //    lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, RED);
+                        //} else {
                             lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
                             sprintf(string_peso, "%.1f", received_data.data.peso_total);
                             lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, AZUL_OCEANO);    
-                        }
+                        //}
                         break;
 
                         case PESO_MEMORIA:
@@ -704,7 +704,7 @@ void display_tft_task(void *pvParameters) {
                         //porque se supone que si no funciona la balanza, no debería poder pesarse
                         if (flag_refresh_display_data) {
 
-                            lcdDrawFillRect(&dev, 96,98,117,178, WHITE);
+                            lcdDrawFillRect(&dev, 93,98,117,178, WHITE);
                             sprintf(string_peso, "%.1f", received_data.data.peso_total);
                             lcdDrawString(&dev, Cons32fx, 118, 178, (uint8_t *)&string_peso, AZUL_OCEANO);
                             flag_refresh_display_data = false; //Este flag es para que no se refresque todo el tiempo el peso

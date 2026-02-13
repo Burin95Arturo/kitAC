@@ -1,0 +1,1 @@
+Terminal on COM5 | 115200 8-N-1
