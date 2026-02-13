@@ -27,7 +27,7 @@ void button_task(void *pvParameters) {
             }
         } 
         if (gpio_get_level(BUTTON_2) == 0) {
-            vTaskDelay(pdMS_TO_TICKS(5));
+            vTaskDelay(pdMS_TO_TICKS(10));
             if (gpio_get_level(BUTTON_2) == 0) {
                 event = EVENT_BUTTON_2;
                 button_pressed = true;

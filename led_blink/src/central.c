@@ -538,7 +538,7 @@ void nuevo_central(void *pvParameters) {
                  /************************************** Estado APAGADO ********************************************/
                 if (estado_actual == STATE_APAGADO) {
                     // Apago la pantalla
-
+                    vTaskDelay(pdMS_TO_TICKS(100)); // Esperar a que se apague la pantalla
                     // Evaluo los botones
                     if (received_data.origen == BUTTON_EVENT) {
                         // Vuelvo al estado inicial
