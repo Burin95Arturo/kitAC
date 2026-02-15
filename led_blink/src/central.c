@@ -699,6 +699,7 @@ void nuevo_central(void *pvParameters) {
                 } //FIN ESTADO BALANZA_RESUMEN
 
                 /************************************** Estado PESANDO ***************************************/
+                //Hay cosas para continuar acá
                 if (estado_actual == STATE_PESANDO) {
                     estado_anterior = STATE_PESANDO;
                     if (flag_peso_calculado) { // Solo muestro el peso si no es error
